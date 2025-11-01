@@ -214,6 +214,5 @@ int main(int argc, char **argv)
         avformat_close_input(&ifmt_ctx);
 
 
-    getchar(); //加上这一句，防止程序打印完信息马上退出
     return 0;
 }
