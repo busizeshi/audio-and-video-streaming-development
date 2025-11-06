@@ -71,9 +71,9 @@ private:
     string input_pcm_name_;
 
     // 麦克风采样属性
-    int mic_sample_rate_ = 48000;
-    int mic_sample_fmt_ = AV_SAMPLE_FMT_S16;
-    int mic_channels_ = 2;
+    int mic_sample_rate_ = 48000;// 采样率
+    int mic_sample_fmt_ = AV_SAMPLE_FMT_S16;// 采样格式
+    int mic_channels_ = 2;// 通道数
 
     // 音频编码参数
     int audio_sample_rate_ = AV_SAMPLE_FMT_S16;

@@ -1,4 +1,4 @@
-﻿#include "SDL.h"
+#include "SDL.h"
 #include "dlog.h"
 
 using namespace std;
@@ -17,9 +17,10 @@ using namespace LQF;
 #define RTMP_URL "rtmp://192.168.1.13/live/livestream"
 // ffmpeg -re -i  rtmp_test_hd.flv  -vcodec copy -acodec copy  -f flv -y rtmp://111.229.231.225/live/livestream
 // ffmpeg -re -i  rtmp_test_hd.flv  -vcodec copy -acodec copy  -f flv -y rtmp://192.168.1.12/live/livestream
-//// ffmpeg -re -i  1920x832_25fps.flv  -vcodec copy -acodec copy  -f flv -y rtmp://111.229.231.225/live/livestream
+// ffmpeg -re -i  1920x832_25fps.flv  -vcodec copy -acodec copy  -f flv -y rtmp://111.229.231.225/live/livestream
 int main(int argc, char* argv[])
 {
+    setbuf(stdout, nullptr);
     init_logger("rtmp_push.log", S_INFO);
     {
         PushWork pushWork; // 可以实例化多个，同时推送多路流
