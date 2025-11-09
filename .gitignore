@@ -1,0 +1,33 @@
+# 忽略构建目录
+cmake-build-debug/
+build/
+cmake-build-*/
+
+# 忽略系统文件
+.DS_Store
+Thumbs.db
+
+# 忽略IDE相关文件
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 忽略资源目录
+resource/
+
+# 忽略可执行文件
+*.exe
+*.out
+*.app
+
+# 忽略编译生成的文件
+*.o
+*.obj
+*.so
+*.dll
+*.dylib
+
+# 忽略CMake相关缓存文件
+CMakeCache.txt
+CMakeFiles/
