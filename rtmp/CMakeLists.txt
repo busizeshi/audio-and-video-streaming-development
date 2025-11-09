@@ -46,7 +46,9 @@ set(SOURCE_FILES
 )
 
 # 6. --- 定义可执行文件 ---
-add_executable(rtmp-publish ${SOURCE_FILES})
+#add_executable(rtmp-publish ${SOURCE_FILES})
+#测试
+add_executable(rtmp-publish D:\\dev\\cxx\\audio-and-video-streaming-development\\rtmp\\test\\read_file.c)
 
 # 7. --- 配置头文件搜索路径 ---
 target_include_directories(rtmp-publish PUBLIC
