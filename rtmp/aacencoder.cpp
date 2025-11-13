@@ -12,10 +12,7 @@
  * ch_layout  默认AV_CH_LAYOUT_STEREO
  * bitrate    默认out_samplerate*3
  */
-AACEncoder::AACEncoder()
-{
-
-}
+AACEncoder::AACEncoder() = default;
 
 AACEncoder::~AACEncoder()
 {
@@ -26,16 +23,12 @@ AACEncoder::~AACEncoder()
         av_frame_free(&frame_);
 }
 
-RET_CODE AACEncoder::Init(const Properties &properties)
+RET_CODE AACEncoder::Init(const Properties& properties)
 {
     // 获取参数
     sample_rate_ = properties.GetProperty("sample_rate", 48000);
-    bitrate_ = properties.GetProperty("bitrate", 128*1024);
+    bitrate_ = properties.GetProperty("bitrate", 128 * 1024);
     channels_ = properties.GetProperty("channels", 2);
-
-    // 旧 API (已废弃)
-    // channel_layout_ = properties.GetProperty("channel_layout",
-    //                                          (int)av_get_default_channel_layout(channels_));
 
     int ret;
 
@@ -43,7 +36,7 @@ RET_CODE AACEncoder::Init(const Properties &properties)
     // 读取默认的aac encoder
     // 注意：请确保你的 aacencoder.h 文件中 codec_ 成员变量是 const AVCodec*
     codec_ = avcodec_find_encoder(AV_CODEC_ID_AAC);
-    if(!codec_)
+    if (!codec_)
     {
         LogError("AAC: No encoder found\n");
         return RET_ERR_MISMATCH_CODE;
@@ -56,26 +49,13 @@ RET_CODE AACEncoder::Init(const Properties &properties)
         return RET_ERR_OUTOFMEMORY;
     }
 
-    // --- 新 API：使用 AVChannelLayout 结构体 ---
-    // 1. 设置声道布局
     av_channel_layout_default(&ctx_->ch_layout, channels_);
 
-    // 2. 检查是否从 properties 中获取了自定义布局
-    // (如果需要，你可以在这里添加 GetProperty 来覆盖默认值)
-    // channel_layout_ (uint64_t) 现在应该设置 ctx_->ch_layout.u.mask
+    ctx_->sample_fmt = AV_SAMPLE_FMT_FLTP;
+    ctx_->sample_rate = sample_rate_;
+    ctx_->bit_rate = bitrate_;
+    ctx_->thread_count = 1;
 
-    // 3. 设置其他参数
-    ctx_->sample_fmt       = AV_SAMPLE_FMT_FLTP;
-    ctx_->sample_rate   = sample_rate_;
-    ctx_->bit_rate     = bitrate_;
-    ctx_->thread_count  = 1;
-
-    // 旧 API (已废弃)
-    // ctx_->channels     = channels_;
-    // ctx_->channel_layout    = channel_layout_;
-    // ------------------------------------------
-
-    //Allow experimental codecs
     ctx_->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
 
     if (avcodec_open2(ctx_, codec_, nullptr) < 0)
@@ -85,30 +65,23 @@ RET_CODE AACEncoder::Init(const Properties &properties)
     }
 
 
-    // 新 API：使用 ch_layout.nb_channels
-    frame_byte_size_ = av_get_bytes_per_sample(ctx_->sample_fmt)
-                       * ctx_->ch_layout.nb_channels * ctx_->frame_size;
-    // 旧 API (已废弃)
-    //        * ctx_->channels * ctx_->frame_size;
-
-
+    // 每个样本字节数*通道数*采样数
+    frame_byte_size_ = av_get_bytes_per_sample(ctx_->sample_fmt) //每个采样占用的字节数
+        * ctx_->ch_layout.nb_channels * ctx_->frame_size;
     //Create frame
     frame_ = av_frame_alloc();
     //Set defaults
-    frame_->nb_samples     = ctx_->frame_size;
-    frame_->format         = ctx_->sample_fmt;
-    frame_->sample_rate    = ctx_->sample_rate;
+    frame_->nb_samples = ctx_->frame_size;
+    frame_->format = ctx_->sample_fmt;
+    frame_->sample_rate = ctx_->sample_rate;
 
-    // 新 API：复制声道布局
-    av_channel_layout_copy(&frame_->ch_layout, &ctx_->ch_layout);
-    // 旧 API (已废弃)
-    // frame_->channel_layout = ctx_->channel_layout;
+    av_channel_layout_copy(&frame_->ch_layout, &ctx_->ch_layout);;
 
     //分配data buf
     ret = av_frame_get_buffer(frame_, 0);
 
     //Log
-    LogInfo("AAC: Encoder open with frame sample size %d.\n",  ctx_->frame_size);
+    LogInfo("AAC: Encoder open with frame sample size %d.\n", ctx_->frame_size);
 
     return RET_OK;
 }
@@ -119,7 +92,7 @@ RET_CODE AACEncoder::Init(const Properties &properties)
  * * 已重构为使用 send/receive API，以模拟旧的 1:1 行为。
  * 这是导致你编译失败的 "avcodec_encode_audio2" 错误的地方。
  */
-int AACEncoder::Encode(AVFrame *frame,uint8_t* out,int out_len)
+int AACEncoder::Encode(AVFrame* frame, uint8_t* out, int out_len)
 {
     if (!frame)
         return 0;
@@ -140,7 +113,7 @@ int AACEncoder::Encode(AVFrame *frame,uint8_t* out,int out_len)
 
     // --- 新 API：接收包 ---
     // 必须在栈上创建一个新 packet，或者 av_packet_alloc
-    AVPacket pkt = {0}; // 初始化为 0
+    AVPacket pkt = {nullptr}; // 初始化为 0
 
     // 旧 API (已废弃)
     // av_init_packet(&pkt);
@@ -157,7 +130,7 @@ int AACEncoder::Encode(AVFrame *frame,uint8_t* out,int out_len)
         av_packet_unref(&pkt); // 即使失败也要 unref
         return -1; // 匹配旧逻辑
     }
-    else if (ret < 0)
+    if (ret < 0)
     {
         // 发生了真正的错误
         LogError("AAC: could not encode audio frame (receive failed %d)\n", ret);
@@ -193,9 +166,9 @@ int AACEncoder::Encode(AVFrame *frame,uint8_t* out,int out_len)
 // ---
 
 
-AVPacket * AACEncoder::Encode(AVFrame *frame, int64_t pts, const int flush)
+AVPacket* AACEncoder::Encode(AVFrame* frame, int64_t pts, const int flush)
 {
-    AVPacket *packet = nullptr;
+    AVPacket* packet = nullptr;
     int ret = 0;
     AVRational src_time_base = AVRational{1, 1000};
     frame->pts = pts;
@@ -205,9 +178,11 @@ AVPacket * AACEncoder::Encode(AVFrame *frame, int64_t pts, const int flush)
         LogError("AAC: no context.\n");
         return nullptr;
     }
-    if(frame){
+    if (frame)
+    {
         int ret = avcodec_send_frame(ctx_, frame);
-        if (ret != 0) {
+        if (ret != 0)
+        {
             LogError("avcodec_send_frame failed");
             return nullptr;
         }
@@ -215,11 +190,13 @@ AVPacket * AACEncoder::Encode(AVFrame *frame, int64_t pts, const int flush)
 
     packet = av_packet_alloc();
     ret = avcodec_receive_packet(ctx_, packet);
-    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+    {
         av_packet_free(&packet); // 必须释放分配的包
         return nullptr;
     }
-    else if (ret < 0) {
+    else if (ret < 0)
+    {
         LogError("avcodec_receive_packet() failed.");
         av_packet_free(&packet); // 必须释放分配的包
         return nullptr;
@@ -235,24 +212,24 @@ AVPacket * AACEncoder::Encode(AVFrame *frame, int64_t pts, const int flush)
  * @param size
  * @return
  */
-RET_CODE AACEncoder::EncodeInput(const uint8_t *in, const uint32_t size)
+RET_CODE AACEncoder::EncodeInput(const uint8_t* in, const uint32_t size)
 {
     RET_CODE ret_code = RET_OK;
-    if(in)
+    if (in)
     {
         // 新 API：使用 ch_layout.nb_channels
         uint32_t need_size = av_get_bytes_per_sample(ctx_->sample_fmt) * ctx_->ch_layout.nb_channels *
-                             ctx_->frame_size;
+            ctx_->frame_size;
         // 旧 API (已废弃)
         //        uint32_t need_size = av_get_bytes_per_sample(ctx_->sample_fmt) * ctx_->channels *
         //                ctx_->frame_size;
 
-        if(size != need_size)
+        if (size != need_size)
         {
             LogError("need size:%u, but the size:%u", need_size, size);
             return RET_ERR_PARAMISMATCH;
         }
-        AVFrame *frame = av_frame_alloc();
+        AVFrame* frame = av_frame_alloc();
         frame->nb_samples = ctx_->frame_size;
         frame->format = ctx_->sample_fmt;
         av_channel_layout_copy(&frame->ch_layout, &ctx_->ch_layout);
@@ -266,7 +243,7 @@ RET_CODE AACEncoder::EncodeInput(const uint8_t *in, const uint32_t size)
         // avcodec_fill_audio_frame(frame, ctx_->channels, ctx_->sample_fmt, in, size, 0);
 
         ret_code = EncodeInput(frame);
-        av_frame_free(&frame);  // 释放自己申请的数据
+        av_frame_free(&frame); // 释放自己申请的数据
         return ret_code;
     }
     else // 为null时flush编码器
@@ -275,17 +252,17 @@ RET_CODE AACEncoder::EncodeInput(const uint8_t *in, const uint32_t size)
     }
 }
 
-RET_CODE AACEncoder::EncodeInput(const AVFrame *frame)
+RET_CODE AACEncoder::EncodeInput(const AVFrame* frame)
 {
     int ret = avcodec_send_frame(ctx_, frame);
-    if(ret != 0)
+    if (ret != 0)
     {
-        if(AVERROR(EAGAIN) == ret)
+        if (AVERROR(EAGAIN) == ret)
         {
             LogWarn("please receive packet then send frame");
             return RET_ERR_EAGAIN;
         }
-        else if(AVERROR_EOF == ret)
+        else if (AVERROR_EOF == ret)
         {
             LogWarn("if you wan continue use it, please new one decoder again");
         }
@@ -294,17 +271,17 @@ RET_CODE AACEncoder::EncodeInput(const AVFrame *frame)
     return RET_OK;
 }
 
-RET_CODE AACEncoder::EncodeOutput(AVPacket *pkt)
+RET_CODE AACEncoder::EncodeOutput(AVPacket* pkt)
 {
     int ret = avcodec_receive_packet(ctx_, pkt);
-    if(ret != 0)
+    if (ret != 0)
     {
-        if(AVERROR(EAGAIN) == ret)
+        if (AVERROR(EAGAIN) == ret)
         {
             LogWarn("output is not available in the current state - user must try to send input");
             return RET_ERR_EAGAIN;
         }
-        else if(AVERROR_EOF == ret)
+        else if (AVERROR_EOF == ret)
         {
             LogWarn("the encoder has been fully flushed, and there will be no more output packets");
             return RET_ERR_EOF;
@@ -314,7 +291,7 @@ RET_CODE AACEncoder::EncodeOutput(AVPacket *pkt)
     return RET_OK;
 }
 
-RET_CODE AACEncoder::EncodeOutput(uint8_t *out, uint32_t &size)
+RET_CODE AACEncoder::EncodeOutput(uint8_t* out, uint32_t& size)
 {
     // 新 API：在栈上创建 AVPacket
     AVPacket pkt = {0};
@@ -337,7 +314,7 @@ RET_CODE AACEncoder::EncodeOutput(uint8_t *out, uint32_t &size)
         {
             // 将数据从 packet 复制到用户的 'out' 缓冲区
             memcpy(out, pkt.data, pkt.size);
-            size = pkt.size;        // 实际编码后的数据长度
+            size = pkt.size; // 实际编码后的数据长度
         }
     }
     else

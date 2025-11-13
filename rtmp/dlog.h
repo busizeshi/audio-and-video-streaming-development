@@ -3,7 +3,6 @@
 #include <cstdio>
 
 
-
 #ifndef NULL
 #define NULL         (0)
 #endif
@@ -20,7 +19,8 @@
 extern "C" {
 #endif
 
-typedef enum _slog_level {
+typedef enum _slog_level
+{
     S_TRACE = 1,
     S_DEBUG = 2,
     S_INFO = 3,
@@ -28,8 +28,8 @@ typedef enum _slog_level {
     S_ERROR = 5
 } slog_level;
 
-int init_logger(const char *log_dir, slog_level level);
-void write_log(slog_level level, int print_stacktrace, const char *func_name, int line, const char *fmt, ...);
+int init_logger(const char* log_dir, slog_level level);
+void write_log(slog_level level, int print_stacktrace, const char* func_name, int line, const char* fmt, ...);
 
 
 #define LogError(fmt, ...) write_log(S_ERROR, FALSE, __FUNCTION__, __LINE__, fmt, ##__VA_ARGS__)

@@ -1,13 +1,14 @@
 #include "videooutsdl.h"
 
-namespace LQF {
-
-// 自定义SDL事件
+namespace LQF
+{
+    // 自定义SDL事件
 #define FRAME_REFRESH_EVENT (SDL_USEREVENT+1)
 
     VideoOutSDL::VideoOutSDL() = default;
 
-    VideoOutSDL::~VideoOutSDL() {
+    VideoOutSDL::~VideoOutSDL()
+    {
         if (texture)
             SDL_DestroyTexture(texture);
         if (renderer)
@@ -20,15 +21,16 @@ namespace LQF {
         SDL_Quit();
     }
 
-    RET_CODE VideoOutSDL::Init(const Properties &properties) {
-
+    RET_CODE VideoOutSDL::Init(const Properties& properties)
+    {
         //初始化 SDL
-        if (SDL_Init(SDL_INIT_VIDEO)) {
+        if (SDL_Init(SDL_INIT_VIDEO))
+        {
             LogError("Could not initialize SDL - %s", SDL_GetError());
             return RET_FAIL;
         }
 
-        int x = properties.GetProperty("win_x", (int) SDL_WINDOWPOS_UNDEFINED);
+        int x = properties.GetProperty("win_x", (int)SDL_WINDOWPOS_UNDEFINED);
         video_width = properties.GetProperty("video_width", 320);
         video_height = properties.GetProperty("video_height", 240);
         //创建窗口
@@ -37,14 +39,16 @@ namespace LQF {
                                SDL_WINDOWPOS_UNDEFINED,
                                video_width, video_height,
                                SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
-        if (!win) {
+        if (!win)
+        {
             LogError("SDL: could not create window, err:%s", SDL_GetError());
             return RET_FAIL;
         }
 
         // 基于窗口创建渲染器
         renderer = SDL_CreateRenderer(win, -1, 0);
-        if (!renderer) {
+        if (!renderer)
+        {
             LogError("SDL: could not create renderer, err:%s", SDL_GetError());
             return RET_FAIL;
         }
@@ -54,17 +58,19 @@ namespace LQF {
                                     SDL_TEXTUREACCESS_STREAMING,
                                     video_width,
                                     video_height);
-        if (!texture) {
+        if (!texture)
+        {
             LogError("SDL: could not create texture, err:%s", SDL_GetError());
             return RET_FAIL;
         }
         video_buf_size_ = static_cast<int>(video_width * video_height * 1.5);
-        video_buf_ = (uint8_t *) malloc(video_buf_size_); // 缓存要显示的画面
+        video_buf_ = (uint8_t*)malloc(video_buf_size_); // 缓存要显示的画面
         mutex = SDL_CreateMutex();
         return RET_OK;
     }
 
-    RET_CODE VideoOutSDL::Cache(uint8_t *video_buf, uint32_t size) {
+    RET_CODE VideoOutSDL::Cache(uint8_t* video_buf, uint32_t size)
+    {
         SDL_LockMutex(mutex);
         memcpy(video_buf_, video_buf, video_buf_size_);
         SDL_UnlockMutex(mutex);
@@ -74,7 +80,8 @@ namespace LQF {
         return RET_OK;
     }
 
-    RET_CODE VideoOutSDL::Output(uint8_t *video_buf, uint32_t size) {
+    RET_CODE VideoOutSDL::Output(uint8_t* video_buf, uint32_t size)
+    {
         SDL_LockMutex(mutex);
         //    return RET_OK;
         // 设置纹理的数据
@@ -96,29 +103,31 @@ namespace LQF {
         return RET_OK;
     }
 
-    RET_CODE VideoOutSDL::Loop() {
-        while (true)      // 主循环
+    RET_CODE VideoOutSDL::Loop()
+    {
+        while (true) // 主循环
         {
-//        LogInfo("into");
+            //        LogInfo("into");
             if (SDL_WaitEvent(&event) != 1)
                 continue;
 
-            switch (event.type) {
-                case SDL_KEYDOWN:
-                    if (event.key.keysym.sym == SDLK_ESCAPE)
-                        return RET_OK;
-                    if (event.key.keysym.sym == SDLK_SPACE)
-                        return RET_OK;
-                    break;
-
-                case SDL_QUIT:    /* Window is closed */
+            switch (event.type)
+            {
+            case SDL_KEYDOWN:
+                if (event.key.keysym.sym == SDLK_ESCAPE)
                     return RET_OK;
-                    break;
-                case FRAME_REFRESH_EVENT:
-                    Output(video_buf_, video_buf_size_);
-                    break;
-                default:
-                    break;
+                if (event.key.keysym.sym == SDLK_SPACE)
+                    return RET_OK;
+                break;
+
+            case SDL_QUIT: /* Window is closed */
+                return RET_OK;
+                break;
+            case FRAME_REFRESH_EVENT:
+                Output(video_buf_, video_buf_size_);
+                break;
+            default:
+                break;
             }
         }
     }

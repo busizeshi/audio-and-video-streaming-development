@@ -12,6 +12,8 @@ http://gitlab.0voice.com/liaoqingfu/rtmp_publish
 ffmpeg -i buweishui.mp3 -ar 48000 -ac 2 -f s16le 48000_2_s16le.pcm
 （2）从文件提取yuv数据
 ffmpeg -i 720x480_25fps.mp4 -an -c:v rawvideo -pix_fmt yuv420p 720x480_25fps_420p.yuv
+ffmpeg -i video1.mp4 -pix_fmt yuv420p -s 720x480 -r 25 -an 720x480_25fps_420p.yuv
+
 
 将他们都放到
 build-rtmp_publish-Desktop_Qt_5_10_1_MinGW_32bit-Debug

@@ -10,10 +10,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # 3. --- 依赖项配置 (请根据你的实际路径修改) ---
 
 # 你的 64-bit FFmpeg 编译输出路径 (使用 /)
-set(FFMPEG_DIR "C:/tools/msys64/home/13127/ffmpeg_build")
+set(FFMPEG_DIR "D:/devtools/cxx/msys2/home/jwd/ffmpeg_build")
 
 # 你的 64-bit MinGW SDL2 开发包解压路径 (!! 替换为你下载的新 SDL2 路径 !!)
-set(SDL2_PATH "D:/cxx/audio-and-video-streaming-development/rtmp/SDL2") # 示例路径，请修改为你实际解压的文件夹名
+set(SDL2_PATH "D:/dev/cxx/audio-and-video-streaming-development/rtmp/SDL2") # 示例路径，请修改为你实际解压的文件夹名
 
 find_package(SDL2 REQUIRED)
 
@@ -46,9 +46,9 @@ set(SOURCE_FILES
 )
 
 # 6. --- 定义可执行文件 ---
-add_executable(rtmp-publish ${SOURCE_FILES})
+#add_executable(rtmp-publish ${SOURCE_FILES})
 #测试
-#add_executable(rtmp-publish D:/cxx/audio-and-video-streaming-development/rtmp/main_publish.cpp)
+add_executable(rtmp-publish D:\\dev\\cxx\\audio-and-video-streaming-development\\rtmp\\test\\read_file.c)
 
 # 7. --- 配置头文件搜索路径 ---
 target_include_directories(rtmp-publish PUBLIC

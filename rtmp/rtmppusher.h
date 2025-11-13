@@ -40,6 +40,7 @@ class RTMPPusher : public NaluLoop,public RTMPBase
 {
     typedef RTMPBase Super;
 public:
+//    先执行NaluLoop构造函数,然后再去执行RTMPBase构造函数
     RTMPPusher():RTMPBase(RTMP_BASE_TYPE_PUSH),NaluLoop(30){LogInfo("RTMPPusher create!");}
     //  MetaData
     bool SendMetadata(FLVMetadataMsg *metadata);

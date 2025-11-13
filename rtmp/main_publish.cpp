@@ -14,7 +14,7 @@ extern "C" {
 using namespace LQF;
 
 //#define RTMP_URL "rtmp://111.229.231.225/live/livestream"
-#define RTMP_URL "rtmp://192.168.1.13/live/livestream"
+#define RTMP_URL "rtmp://192.168.2.128/live/livestream"
 // ffmpeg -re -i  rtmp_test_hd.flv  -vcodec copy -acodec copy  -f flv -y rtmp://111.229.231.225/live/livestream
 // ffmpeg -re -i  rtmp_test_hd.flv  -vcodec copy -acodec copy  -f flv -y rtmp://192.168.1.12/live/livestream
 // ffmpeg -re -i  1920x832_25fps.flv  -vcodec copy -acodec copy  -f flv -y rtmp://111.229.231.225/live/livestream
@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
         Properties properties;
         // 音频test模式
         properties.SetProperty("audio_test", 1);    // 音频测试模式
-        properties.SetProperty("input_pcm_name", R"(D:\dev\cxx\audio-and-video-streaming-development\resource\output_audio.pcm)");
+        properties.SetProperty("input_pcm_name", R"(D:\cxx\resource\48000_2_s16le.pcm)");
         // 麦克风采样属性
         properties.SetProperty("mic_sample_fmt", AV_SAMPLE_FMT_S16);
         properties.SetProperty("mic_sample_rate", 48000);
@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
 
         //视频test模式
         properties.SetProperty("video_test", 1);
-        properties.SetProperty("input_yuv_name", R"(D:\dev\cxx\audio-and-video-streaming-development\resource\output_video.yuv)");
+        properties.SetProperty("input_yuv_name", R"(D:\cxx\resource\720x480_25fps_420p.yuv)");
         // 桌面录制属性
         properties.SetProperty("desktop_x", 0);
         properties.SetProperty("desktop_y", 0);

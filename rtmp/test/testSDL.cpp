@@ -3,9 +3,9 @@
 #include <cstdio>
 
 // --- 配置常量 ---
-const int VIDEO_WIDTH = 1280;
-const int VIDEO_HEIGHT = 720;
-const char* YUV_FILE_PATH = R"(D:\dev\cxx\audio-and-video-streaming-development\resource\yuv420p_1280x720.yuv)";
+const int VIDEO_WIDTH = 720;
+const int VIDEO_HEIGHT = 480;
+const char* YUV_FILE_PATH = R"(D:\cxx\resource\720x480_25fps_420p.yuv)";
 // YUV 420P 一帧的大小 = 宽 * 高 * 1.5
 const int FRAME_SIZE = VIDEO_WIDTH * VIDEO_HEIGHT * 3 / 2;
 
@@ -81,13 +81,13 @@ int reader_thread(void* opaque) {
  */
 int main(int argc, char* argv[]) {
 
-    // 1. 初始化SDL (和你的代码一样)
+    // 1. 初始化SDL
     if (SDL_Init(SDL_INIT_VIDEO)) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not initialize SDL: %s", SDL_GetError());
         return -1;
     }
 
-    // 2. 创建窗口 (和你的代码一样)
+    // 2. 创建窗口
     SDL_Window* window = SDL_CreateWindow(
             "YUV Mutex Example",
             SDL_WINDOWPOS_UNDEFINED,
@@ -100,14 +100,14 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    // 3. 创建渲染器 (和你的代码一样)
+    // 3. 创建渲染器
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
     if (!renderer) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not create renderer: %s", SDL_GetError());
         return -1;
     }
 
-    // 4. 创建纹理 (和你的代码一样)
+    // 4. 创建纹理
     // YUV420P 在SDL中对应的格式是 IYUV (或 YV12)
     SDL_Texture* texture = SDL_CreateTexture(
             renderer,
@@ -121,14 +121,14 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    // 5. 分配共享缓冲区 (和你的代码一样)
+    // 5. 分配共享缓冲区
     g_video_buf = (uint8_t*)malloc(FRAME_SIZE);
     if (!g_video_buf) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to allocate g_video_buf");
         return -1;
     }
 
-    // 6.【关键】创建互斥锁 (和你的代码一样)
+    // 6.创建互斥锁
     g_mutex = SDL_CreateMutex();
     if (!g_mutex) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create mutex: %s", SDL_GetError());
@@ -154,7 +154,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        // 9.【关键】锁定互斥锁，准备读取共享缓冲区
+        // 9.锁定互斥锁，准备读取共享缓冲区
         // 如果此时读取线程(A)正持有锁(在写入)，这里会阻塞等待
         SDL_LockMutex(g_mutex);
 
@@ -173,7 +173,7 @@ int main(int argc, char* argv[]) {
         );
         // --- 临界区结束 ---
 
-        // 11.【关键】解锁互斥锁
+        // 11.解锁互斥锁
         SDL_UnlockMutex(g_mutex);
 
         // 12. 正常渲染

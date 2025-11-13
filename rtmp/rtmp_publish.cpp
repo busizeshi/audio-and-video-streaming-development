@@ -17,11 +17,11 @@
 
 enum RTMPChannel
 {
-   RTMP_NETWORK_CHANNEL = 2,   ///< channel for network-related messages (bandwidth report, ping, etc)
-   RTMP_SYSTEM_CHANNEL,        ///< channel for sending server control messages
-   RTMP_AUDIO_CHANNEL,         ///< channel for audio data
-   RTMP_VIDEO_CHANNEL   = 6,   ///< channel for video data
-   RTMP_SOURCE_CHANNEL  = 8,   ///< channel for a/v invokes
+    RTMP_NETWORK_CHANNEL = 2, ///< channel for network-related messages (bandwidth report, ping, etc)
+    RTMP_SYSTEM_CHANNEL, ///< channel for sending server control messages
+    RTMP_AUDIO_CHANNEL, ///< channel for audio data
+    RTMP_VIDEO_CHANNEL = 6, ///< channel for video data
+    RTMP_SOURCE_CHANNEL = 8, ///< channel for a/v invokes
 };
 
 
@@ -54,46 +54,51 @@ static int64_t get_current_time_msec()
 }
 
 /*read 1 byte*/
-int ReadU8(uint32_t *u8, FILE*fp)
+int ReadU8(uint32_t* u8, FILE* fp)
 {
     if (fread(u8, 1, 1, fp) != 1)
         return 0;
     return 1;
 }
+
 /*read 2 byte*/
-int ReadU16(uint32_t *u16, FILE*fp)
+int ReadU16(uint32_t* u16, FILE* fp)
 {
     if (fread(u16, 2, 1, fp) != 1)
         return 0;
     *u16 = HTON16(*u16);
     return 1;
 }
+
 /*read 3 byte*/
-int ReadU24(uint32_t *u24, FILE*fp)
+int ReadU24(uint32_t* u24, FILE* fp)
 {
     if (fread(u24, 3, 1, fp) != 1)
         return 0;
     *u24 = HTON24(*u24);
     return 1;
 }
+
 /*read 4 byte*/
-int ReadU32(uint32_t *u32, FILE*fp)
+int ReadU32(uint32_t* u32, FILE* fp)
 {
     if (fread(u32, 4, 1, fp) != 1)
         return 0;
     *u32 = HTON32(*u32);
     return 1;
 }
+
 /*read 1 byte,and loopback 1 byte at once*/
-int PeekU8(uint32_t *u8, FILE*fp)
+int PeekU8(uint32_t* u8, FILE* fp)
 {
     if (fread(u8, 1, 1, fp) != 1)
         return 0;
     fseek(fp, -1, SEEK_CUR);
     return 1;
 }
+
 /*read 4 byte and convert to time format*/
-int ReadTime(uint32_t *utime, FILE*fp)
+int ReadTime(uint32_t* utime, FILE* fp)
 {
     if (fread(utime, 4, 1, fp) != 1)
         return 0;
@@ -121,8 +126,8 @@ void CleanupSockets()
 //Publish using RTMP_SendPacket()
 extern int rtmpPublish(int argc, char* argv[])
 {
-    RTMP *rtmp = NULL;
-    RTMPPacket *packet = NULL;
+    RTMP* rtmp = NULL;
+    RTMPPacket* packet = NULL;
     uint32_t start_time = 0;
     uint32_t now_time = 0;
     //the timestamp of the previous frame
@@ -135,7 +140,7 @@ extern int rtmpPublish(int argc, char* argv[])
     uint32_t timestamp = 0;
     uint32_t streamid = 0;
 
-    FILE*fp = NULL;
+    FILE* fp = NULL;
     fp = fopen(FLV_NAME, "rb");
     if (!fp)
     {
@@ -160,7 +165,7 @@ extern int rtmpPublish(int argc, char* argv[])
 
     rtmp->Link.timeout = 5;
     RTMP_LogInfo(RTMP_LOGINFO, "RTMP_SetupURL ---------->\n");
-    if (!RTMP_SetupURL(rtmp, (char *)RTMP_URL))
+    if (!RTMP_SetupURL(rtmp, (char*)RTMP_URL))
     {
         RTMP_LogInfo(RTMP_LOGERROR, "SetupURL Err\n");
         RTMP_Free(rtmp);
@@ -204,9 +209,9 @@ extern int rtmpPublish(int argc, char* argv[])
 
     RTMP_LogInfo(RTMP_LOGINFO, "Start to send data ...   ---------->\n");
     //jump over FLV Header
-    fseek(fp, 9, SEEK_SET);			// 跳过FLV header
+    fseek(fp, 9, SEEK_SET); // 跳过FLV header
     //jump over previousTagSizen
-    fseek(fp, 4, SEEK_CUR);			// 跳过 previousTagSizen
+    fseek(fp, 4, SEEK_CUR); // 跳过 previousTagSizen
     start_time = (uint32_t)get_current_time_msec();
     int h264_frame_count = 0;
     int continue_sleep_count = 0;
@@ -215,10 +220,10 @@ extern int rtmpPublish(int argc, char* argv[])
     while (1)
     {
         if ((((now_time = (uint32_t)get_current_time_msec()) - start_time)
-             <(audio_current_timestamp - audio_start_timestamp)))
+            < (audio_current_timestamp - audio_start_timestamp)))
         {
             Sleep(30);
-            if(continue_sleep_count++ > 30)
+            if (continue_sleep_count++ > 30)
             {
                 RTMP_LogPrintf("continue_sleep_count=%d timeout, time:%ums, aud:%ums\n",
                                continue_sleep_count,
@@ -229,13 +234,13 @@ extern int rtmpPublish(int argc, char* argv[])
         }
         continue_sleep_count = 0;
         //not quite the same as FLV spec
-        if (!ReadU8(&type, fp))			// 读取tag类型
+        if (!ReadU8(&type, fp)) // 读取tag类型
         {
             RTMP_LogInfo(RTMP_LOGERROR, "%s(%d) break\n", __FUNCTION__, __LINE__);
             break;
         }
         datalength = 0;
-        if (!ReadU24(&datalength, fp))	// 负载数据长度
+        if (!ReadU24(&datalength, fp)) // 负载数据长度
         {
             RTMP_LogInfo(RTMP_LOGERROR, "%s(%d) break\n", __FUNCTION__, __LINE__);
             break;
@@ -262,21 +267,19 @@ extern int rtmpPublish(int argc, char* argv[])
 
         if (type == RTMP_PACKET_TYPE_AUDIO)
         {
-            if(audio_start_timestamp == 0)
+            if (audio_start_timestamp == 0)
             {
                 audio_start_timestamp = timestamp;
                 start_time = (uint32_t)get_current_time_msec();
             }
-            if(timestamp <  audio_current_timestamp)    //回绕？做重置
+            if (timestamp < audio_current_timestamp) //回绕？做重置
             {
                 audio_start_timestamp = 0;
                 start_time = (uint32_t)get_current_time_msec();
                 RTMP_LogInfo(RTMP_LOGWARNING, "%s(%d) timestamp rollback %u->%ums\n",
-                         __FUNCTION__, __LINE__, audio_current_timestamp, timestamp);
-
+                             __FUNCTION__, __LINE__, audio_current_timestamp, timestamp);
             }
             audio_current_timestamp = timestamp;
-
         }
         size_t read_len = 0;
         if ((read_len = fread(packet->m_body, 1, datalength, fp)) != datalength)
@@ -285,11 +288,11 @@ extern int rtmpPublish(int argc, char* argv[])
             break;
         }
 
-        if(type == RTMP_PACKET_TYPE_AUDIO)
+        if (type == RTMP_PACKET_TYPE_AUDIO)
         {
             packet->m_nChannel = RTMP_AUDIO_CHANNEL;
         }
-        if(type == RTMP_PACKET_TYPE_VIDEO)
+        if (type == RTMP_PACKET_TYPE_VIDEO)
         {
             packet->m_nChannel = RTMP_VIDEO_CHANNEL;
         }
@@ -352,6 +355,3 @@ extern int rtmpPublish(int argc, char* argv[])
     CleanupSockets();
     return 0;
 }
-
-
-

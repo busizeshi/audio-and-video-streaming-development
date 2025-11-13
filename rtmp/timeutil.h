@@ -44,25 +44,26 @@ using namespace std::chrono;
 #ifdef _WIN32
 #pragma comment(lib, "ws2_32.lib")
 #endif
-namespace LQF {
-class TimesUtil
+namespace LQF
 {
-public:
-    static inline int64_t GetTimeMillisecond()
+    class TimesUtil
     {
-        #ifdef _WIN32
+    public:
+        static inline int64_t GetTimeMillisecond()
+        {
+#ifdef _WIN32
             return (int64_t)GetTickCount();
-        #else
+#else
             struct timeval tv;
             gettimeofday(&tv, NULL);
             return ((int64_t)tv.tv_sec * 1000 + (unsigned long long)tv.tv_usec / 1000);
-        #endif
+#endif
 
-//        return duration_cast<chrono::milliseconds>(high_resolution_clock::now() - m_begin).count();
+            //        return duration_cast<chrono::milliseconds>(high_resolution_clock::now() - m_begin).count();
+        }
 
-    }
-//private:
-//    static time_point<high_resolution_clock> m_begin;
-};
+        //private:
+        //    static time_point<high_resolution_clock> m_begin;
+    };
 }
 #endif // TIMEUTIL_H
