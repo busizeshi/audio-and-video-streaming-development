@@ -9,13 +9,14 @@ namespace LQF
 {
     using std::function;
 
-    class VideoCapturer : public CommonLooper
+    class VideoCapturer final : public CommonLooper
     {
     public:
         VideoCapturer();
-        virtual ~VideoCapturer();
+        ~VideoCapturer() override;
         /**
          * @brief Init
+         * @param properties
          * @param "x", x起始位置，缺省为0
          *          "y", y起始位置，缺省为0
          *          "width", 宽度，缺省为屏幕宽带
@@ -26,9 +27,9 @@ namespace LQF
          */
         RET_CODE Init(const Properties& properties);
 
-        virtual void Loop();
+        void Loop() override;
 
-        void AddCallback(function<void(uint8_t*, int32_t)> callable_object)
+        void AddCallback(const function<void(uint8_t*, int32_t)>& callable_object)
         {
             callable_object_ = callable_object;
         }
@@ -36,26 +37,26 @@ namespace LQF
     private:
         int video_test_ = 0;
         std::string input_yuv_name_;
-        int x_;
-        int y_;
+        int x_{};
+        int y_{};
         int width_ = 0;
         int height_ = 0;
         int pixel_format_ = 0;
-        int fps_;
+        int fps_{};
         double frame_duration_ = 40;
 
         // 本地文件测试
         int openYuvFile(const char* file_name);
         int readYuvFile(uint8_t* yuv_buf, int32_t yuv_buf_size);
-        int closeYuvFile();
+        int closeYuvFile() const;
         int64_t yuv_start_time_ = 0; // 起始时间
         double yuv_total_duration_ = 0; // PCM读取累计的时间
-        FILE* yuv_fp_ = NULL;
-        uint8_t* yuv_buf_ = NULL;
+        FILE* yuv_fp_ = nullptr;
+        uint8_t* yuv_buf_ = nullptr;
         int yuv_buf_size = 0;
 
 
-        function<void(uint8_t*, int32_t)> callable_object_ = NULL;
+        function<void(uint8_t*, int32_t)> callable_object_ = nullptr;
 
         bool is_first_frame_ = false;
     };

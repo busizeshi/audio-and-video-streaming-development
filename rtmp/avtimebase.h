@@ -25,7 +25,6 @@ namespace LQF
             PTS_REAL_TIME // 实时pts
         } PTS_STRATEGY;
 
-    public:
         //        单例模式
         static AVPublishTime* GetInstance()
         {
@@ -47,13 +46,13 @@ namespace LQF
         void set_audio_frame_duration(const double frame_duration)
         {
             audio_frame_duration_ = frame_duration;
-            audio_frame_threshold_ = (uint32_t)(frame_duration / 2);
+            audio_frame_threshold_ = static_cast<uint32_t>(frame_duration / 2);
         }
 
         void set_video_frame_duration(const double frame_duration)
         {
             video_frame_duration_ = frame_duration;
-            video_frame_threshold_ = (uint32_t)(frame_duration / 2);
+            video_frame_threshold_ = static_cast<uint32_t>(frame_duration / 2);
         }
 
         uint32_t get_audio_pts()
@@ -61,7 +60,7 @@ namespace LQF
             int64_t pts = getCurrentTimeMsec() - start_time_;
             if (PTS_RECTIFY == audio_pts_strategy_)
             {
-                auto diff = (uint32_t)abs(pts - (long long)(audio_pre_pts_ + audio_frame_duration_));
+                auto diff = static_cast<uint32_t>(abs(pts - static_cast<long long>(audio_pre_pts_ + audio_frame_duration_)));
                 if (diff < audio_frame_threshold_)
                 {
                     // 误差在阈值范围内, 保持帧间隔
@@ -71,7 +70,7 @@ namespace LQF
                 }
                 audio_pre_pts_ = (double)pts; // 误差超过半帧，重新调整pts
                 LogDebug("get_audio_pts2:%u, RECTIFY:%0.0lf", diff, audio_pre_pts_);
-                return (uint32_t)(pts % 0xffffffff);
+                return static_cast<uint32_t>(pts % 0xffffffff);
             }
             else
             {
@@ -97,7 +96,7 @@ namespace LQF
                 }
                 video_pre_pts_ = static_cast<double>(pts); // 误差超过半帧，重新调整pts
                 LogDebug("get_video_pts2:%u RECTIFY:%0.0lf", diff, video_pre_pts_);
-                return (uint32_t)(pts % 0xffffffff);
+                return static_cast<uint32_t>(pts % 0xffffffff);
             }
             else
             {
@@ -214,7 +213,7 @@ namespace LQF
             clock = mktime(&tm);
             tv.tv_sec = clock;
             tv.tv_usec = wtm.wMilliseconds * 1000;
-            return ((unsigned long long)tv.tv_sec * 1000 + (long)tv.tv_usec / 1000);
+            return ((unsigned long long)tv.tv_sec * 1000 + tv.tv_usec / 1000);
 #else
             struct timeval tv;
             gettimeofday(&tv, NULL);
@@ -357,7 +356,7 @@ namespace LQF
             clock = mktime(&tm);
             tv.tv_sec = static_cast<long>(clock);
             tv.tv_usec = wtm.wMilliseconds * 1000;
-            return static_cast<int64_t>((unsigned long long)tv.tv_sec * 1000 + (long)tv.tv_usec / 1000);
+            return static_cast<int64_t>(static_cast<unsigned long long>(tv.tv_sec) * 1000 + (long)tv.tv_usec / 1000);
 #else
             struct timeval tv;
             gettimeofday(&tv, NULL);

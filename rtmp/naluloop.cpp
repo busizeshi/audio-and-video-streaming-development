@@ -3,12 +3,12 @@
 namespace LQF
 {
     NaluLoop::NaluLoop(int queue_nalu_len) :
-        max_nalu_(queue_nalu_len), Looper()
+        Looper(), max_nalu_(queue_nalu_len)
     {
     }
 
     //队列里面既有音频，也有视频
-    void NaluLoop::addmsg(LooperMessage* msg, bool flush)
+    void NaluLoop::addmsg(LooperMessage* msg, const bool flush)
     {
         queue_mutex_.lock();
         if (flush)

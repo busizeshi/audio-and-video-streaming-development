@@ -30,7 +30,7 @@ namespace LQF
             return RET_FAIL;
         }
 
-        int x = properties.GetProperty("win_x", (int)SDL_WINDOWPOS_UNDEFINED);
+        int x = properties.GetProperty("win_x", static_cast<int>(SDL_WINDOWPOS_UNDEFINED));
         video_width = properties.GetProperty("video_width", 320);
         video_height = properties.GetProperty("video_height", 240);
         //创建窗口
@@ -64,23 +64,23 @@ namespace LQF
             return RET_FAIL;
         }
         video_buf_size_ = static_cast<int>(video_width * video_height * 1.5);
-        video_buf_ = (uint8_t*)malloc(video_buf_size_); // 缓存要显示的画面
+        video_buf_ = static_cast<uint8_t*>(malloc(video_buf_size_)); // 缓存要显示的画面
         mutex = SDL_CreateMutex();
         return RET_OK;
     }
 
-    RET_CODE VideoOutSDL::Cache(uint8_t* video_buf, uint32_t size)
+    RET_CODE VideoOutSDL::Cache(const uint8_t* video_buf) const
     {
         SDL_LockMutex(mutex);
         memcpy(video_buf_, video_buf, video_buf_size_);
         SDL_UnlockMutex(mutex);
-        SDL_Event event;
-        event.type = FRAME_REFRESH_EVENT;
-        SDL_PushEvent(&event);
+        SDL_Event refreshEvent;
+        refreshEvent.type = FRAME_REFRESH_EVENT;
+        SDL_PushEvent(&refreshEvent);
         return RET_OK;
     }
 
-    RET_CODE VideoOutSDL::Output(uint8_t* video_buf, uint32_t size)
+    RET_CODE VideoOutSDL::Output(const uint8_t* video_buf)
     {
         SDL_LockMutex(mutex);
         //    return RET_OK;
@@ -124,7 +124,7 @@ namespace LQF
                 return RET_OK;
                 break;
             case FRAME_REFRESH_EVENT:
-                Output(video_buf_, video_buf_size_);
+                Output(video_buf_);
                 break;
             default:
                 break;

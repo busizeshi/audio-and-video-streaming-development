@@ -56,13 +56,13 @@ namespace LQF
         RET_CODE Init(const Properties& properties);
         void DeInit();
         // Audio编码后的数据回调
-        void AudioCallback(NaluStruct* nalu_data);
+        static void AudioCallback(NaluStruct* nalu_data);
         // Video编码后的数据回调
-        void VideoCallback(NaluStruct* nalu_data);
+        static void VideoCallback(NaluStruct* nalu_data);
         // pcm数据的数据回调
         void PcmCallback(uint8_t* pcm, int32_t size);
         // 数据回调
-        void YuvCallback(uint8_t* yuv, int32_t size);
+        void YuvCallback(uint8_t* yuv);
         void Loop() const;
 
     private:
@@ -120,22 +120,22 @@ namespace LQF
 
 
         // 视频相关
-        VideoCapturer* video_capturer = NULL;
-        H264Encoder* video_encoder_ = NULL;
+        VideoCapturer* video_capturer = nullptr;
+        H264Encoder* video_encoder_ = nullptr;
 
-        uint8_t* video_nalu_buf = NULL;
+        uint8_t* video_nalu_buf = nullptr;
         int video_nalu_size_ = 0;
         const int VIDEO_NALU_BUF_MAX_SIZE = 1024 * 1024;
 
 
         // 显示推流画面时使用
-        VideoOutSDL* video_out_sdl = NULL;
+        VideoOutSDL* video_out_sdl = nullptr;
 
         // dump h264文件
-        FILE* h264_fp_ = NULL;
-        FILE* aac_fp_ = NULL;
-        FILE* pcm_flt_fp_ = NULL;
-        FILE* pcm_s16le_fp_ = NULL;
+        FILE* h264_fp_ = nullptr;
+        FILE* aac_fp_ = nullptr;
+        FILE* pcm_flt_fp_ = nullptr;
+        FILE* pcm_s16le_fp_ = nullptr;
     };
 }
 #endif // PUSHWORK_H

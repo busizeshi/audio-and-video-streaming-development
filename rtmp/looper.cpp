@@ -32,19 +32,19 @@ namespace LQF
     }
 
     //
-    void Looper::Post(int what, void* data, bool flush)
+    void Looper::Post(const int what, void* data, const bool flush)
     {
         auto* msg = new LooperMessage();
         msg->what = what;
-        msg->obj = (MsgBaseObj*)data;
+        msg->obj = static_cast<MsgBaseObj*>(data);
         msg->quit = false;
         addmsg(msg, flush);
     }
 
-    void Looper::addmsg(LooperMessage* msg, bool flush)
+    void Looper::addmsg(LooperMessage* msg, const bool flush)
     {
         // 获取锁，发数据
-        int64_t t1 = TimesUtil::GetTimeMillisecond();
+        const int64_t t1 = TimesUtil::GetTimeMillisecond();
         queue_mutex_.lock();
         if (flush || msg_queue_.size() > deque_max_size_)
         {
@@ -52,7 +52,7 @@ namespace LQF
                     msg->what, msg_queue_.size(), AVPlayTime::GetInstance()->getCurrenTime());
             while (!msg_queue_.empty())
             {
-                LooperMessage* tmp_msg = msg_queue_.front();
+                const LooperMessage* tmp_msg = msg_queue_.front();
                 msg_queue_.pop_front();
                 delete tmp_msg->obj;
                 delete tmp_msg;
@@ -68,7 +68,7 @@ namespace LQF
 
         head_data_available_->post();
         //    LogInfo("Looper post");
-        int64_t t2 = TimesUtil::GetTimeMillisecond();
+        const int64_t t2 = TimesUtil::GetTimeMillisecond();
         if (t2 - t1 > 10)
         {
             LogWarn("t2 - t1 = %ld", t2 - t1);
@@ -82,7 +82,7 @@ namespace LQF
         while (true)
         {
             queue_mutex_.lock();
-            int size = msg_queue_.size();
+            const int size = msg_queue_.size();
             if (size > 0)
             {
                 msg = msg_queue_.front();
@@ -109,7 +109,7 @@ namespace LQF
                 //            if(msg->what == 1)
                 LogDebug("sleep msg, t:%u", AVPlayTime::GetInstance()->getCurrenTime());
                 head_data_available_->wait();
-                std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                std::this_thread::sleep_for(milliseconds(5));
             }
             //        else
             //        {
@@ -147,15 +147,15 @@ namespace LQF
                 delete worker_;
                 worker_ = nullptr;
             }
-            if (head_data_available_)
-                delete head_data_available_;
+
+            delete head_data_available_;
 
             running_ = false;
         }
     }
 
-    void Looper::handle(int what, void* obj)
+    void Looper::handle(const int what, void* data)
     {
-        LogInfo("dropping msg %d %p", what, obj);
+        LogInfo("dropping msg %d %p", what, data);
     }
 }

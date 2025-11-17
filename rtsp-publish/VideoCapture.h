@@ -1,0 +1,72 @@
+#ifndef RTSP_PUBLISH_VIDEOCAPTURE_H
+#define RTSP_PUBLISH_VIDEOCAPTURE_H
+
+#include <atomic>
+#include <string>
+#include <thread>
+#include <functional>
+#include <iostream>
+
+extern "C" {
+#include <libavdevice/avdevice.h>
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libavutil/time.h>
+#include <libavutil/imgutils.h>
+}
+
+/**
+ * @brief 视频帧回调函数
+ * 回调收到的是一个已经做了 av_frame_ref() 的 AVFrame*。
+ * 使用者在处理完后**必须**调用 av_frame_unref(frame); av_frame_free(&frame);
+ *
+ * @param frame 已经被引用（ref）的 AVFrame*
+ */
+using VideoFrameCallback = std::function<void(AVFrame* frame)>;
+
+class VideoCapture
+{
+public:
+    VideoCapture();
+    ~VideoCapture();
+
+    /**
+     * @brief 打开摄像头
+     * @param deviceName 设备名（在 Windows/dshow 是设备显示名）
+     * @param width 宽
+     * @param height 高
+     * @param fps 帧率
+     * @return true 成功
+     */
+    bool open(const std::string& deviceName, int width, int height, int fps);
+
+    /**
+     * @brief 开始采集（会启动线程）
+     * @param cb 回调函数（会在采集线程中调用）
+     */
+    void start(const VideoFrameCallback& cb);
+
+    /**
+     * @brief 停止采集（会等待线程退出并释放资源）
+     */
+    void stop();
+
+private:
+    /**
+     * @brief 采集工作线程（内部运行）
+     */
+    void captureThreadLoop();
+
+private:
+    AVFormatContext* fmt_ctx = nullptr;
+    AVCodecContext* codec_ctx = nullptr;
+    int video_stream_index = -1;
+
+    std::thread worker_thread;
+    std::atomic<bool> isRunning{false};
+    VideoFrameCallback callback = nullptr;
+
+    int64_t startTime = 0;
+};
+
+#endif // RTSP_PUBLISH_VIDEOCAPTURE_H

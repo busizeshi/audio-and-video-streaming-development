@@ -15,7 +15,7 @@ namespace LQF
 {
     using std::string;
 
-    class H264Encoder
+    class H264Encoder final
     {
     public:
         H264Encoder();
@@ -24,56 +24,56 @@ namespace LQF
          * @param properties
          * @return
          */
-        virtual int Init(const Properties& properties);
+        int Init(const Properties& properties);
         virtual ~H264Encoder();
-        virtual int Encode(uint8_t* in, int in_samples, uint8_t* out, int& out_size);
-        virtual int Encode(AVFrame* frame, uint8_t* out, int& out_size);
+        int Encode(uint8_t* in, int in_samples, uint8_t* out, int& out_size);
+        int Encode(AVFrame* frame, uint8_t* out, int& out_size);
         int get_sps(uint8_t* sps, int& sps_len) const;
         int get_pps(uint8_t* pps, int& pps_len);
 
-        inline int get_width()
+        int get_width() const
         {
             return ctx_->width;
         }
 
-        inline int get_height()
+        int get_height() const
         {
             return ctx_->height;
         }
 
-        double get_framerate()
+        double get_framerate() const
         {
             return ctx_->framerate.num / ctx_->framerate.den;
         }
 
-        inline int64_t get_bit_rate()
+        int64_t get_bit_rate() const
         {
             return ctx_->bit_rate;
         }
 
-        inline uint8_t* get_sps_data()
+        uint8_t* get_sps_data() const
         {
             return (uint8_t*)sps_.c_str();
         }
 
-        inline int get_sps_size()
+        int get_sps_size()
         {
             return sps_.size();
         }
 
-        inline uint8_t* get_pps_data()
+        uint8_t* get_pps_data() const
         {
             return (uint8_t*)pps_.c_str();
         }
 
-        inline int get_pps_size()
+        int get_pps_size() const
         {
             return pps_.size();
         }
 
-        virtual AVPacket* Encode(uint8_t* yuv, uint64_t pts = 0, const int flush = 0);
+        AVPacket* Encode(uint8_t* yuv, uint64_t pts = 0, int flush = 0);
 
-        AVCodecContext* GetCodecContext()
+        AVCodecContext* GetCodecContext() const
         {
             return ctx_;
         }

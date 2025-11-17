@@ -18,7 +18,7 @@ namespace LQF
         static void* trampoline(void* p);
 
     protected:
-        std::thread* worker_;
+        std::thread* worker_{};
         bool request_exit_ = false;
         bool running_ = false;
     };

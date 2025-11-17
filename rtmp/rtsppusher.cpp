@@ -3,7 +3,7 @@
 #include "timesutil.h"
 
 RtspPusher::RtspPusher(MessageQueue* msg_queue)
-    : msg_queue_(msg_queue)
+    : timeout_(0), msg_queue_(msg_queue)
 {
     LogInfo("RtspPusher create");
 }
@@ -60,7 +60,7 @@ RET_CODE RtspPusher::Init(const Properties& properties)
         return RET_FAIL;
     }
     // 分配AVFormatContext
-    ret = avformat_alloc_output_context2(&fmt_ctx_, NULL, "rtsp", url_.c_str());
+    ret = avformat_alloc_output_context2(&fmt_ctx_, nullptr, "rtsp", url_.c_str());
     if (ret < 0)
     {
         av_strerror(ret, str_error, sizeof(str_error) - 1);
@@ -96,7 +96,7 @@ void RtspPusher::DeInit() // 这个函数重复调用没有问题
     if (fmt_ctx_)
     {
         avformat_free_context(fmt_ctx_);
-        fmt_ctx_ = NULL;
+        fmt_ctx_ = nullptr;
     }
     if (queue_)
     {
@@ -299,7 +299,7 @@ RET_CODE RtspPusher::ConfigVideoStream(const AVCodecContext* ctx)
         return RET_FAIL;
     }
     // 添加视频流
-    AVStream* vs = avformat_new_stream(fmt_ctx_, NULL);
+    AVStream* vs = avformat_new_stream(fmt_ctx_, nullptr);
     if (!vs)
     {
         LogError("avformat_new_stream failed");
@@ -308,7 +308,7 @@ RET_CODE RtspPusher::ConfigVideoStream(const AVCodecContext* ctx)
     vs->codecpar->codec_tag = 0;
     // 从编码器拷贝信息
     avcodec_parameters_from_context(vs->codecpar, ctx);
-    video_ctx_ = (AVCodecContext*)ctx;
+    video_ctx_ = const_cast<AVCodecContext*>(ctx);
     video_stream_ = vs;
     video_index_ = vs->index; // 整个索引非常重要 fmt_ctx_根据index判别 音视频包
     return RET_OK;
@@ -327,7 +327,7 @@ RET_CODE RtspPusher::ConfigAudioStream(const AVCodecContext* ctx)
         return RET_FAIL;
     }
     // 添加视频流
-    AVStream* as = avformat_new_stream(fmt_ctx_, NULL);
+    AVStream* as = avformat_new_stream(fmt_ctx_, nullptr);
     if (!as)
     {
         LogError("avformat_new_stream failed");

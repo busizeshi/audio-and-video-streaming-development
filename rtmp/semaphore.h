@@ -16,11 +16,9 @@ namespace LQF
             count_ = 0;
         }
 
-        ~Semaphore()
-        {
-        }
+        ~Semaphore() = default;
 
-        void post(unsigned int n = 1)
+        void post(const unsigned int n = 1)
         {
             unique_lock<mutex> lock(mutex_);
             count_ += n;

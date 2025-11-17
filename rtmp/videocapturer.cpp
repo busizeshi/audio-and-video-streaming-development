@@ -5,14 +5,11 @@
 
 namespace LQF
 {
-    VideoCapturer::VideoCapturer()
-    {
-    }
+    VideoCapturer::VideoCapturer() = default;
 
     VideoCapturer::~VideoCapturer()
     {
-        if (yuv_buf_)
-            delete [] yuv_buf_;
+        delete [] yuv_buf_;
     }
 
     RET_CODE VideoCapturer::Init(const Properties& properties)
@@ -98,12 +95,12 @@ namespace LQF
                 return -1;
             }
         }
-        LogDebug("yuv_total_duration_:%lldms, %lldms", (int64_t)yuv_total_duration_, dif);
+        LogDebug("yuv_total_duration_:%lldms, %lldms", static_cast<int64_t>(yuv_total_duration_), dif);
         yuv_total_duration_ += frame_duration_; //
         return 0;
     }
 
-    int VideoCapturer::closeYuvFile()
+    int VideoCapturer::closeYuvFile() const
     {
         if (yuv_fp_)
             fclose(yuv_fp_);

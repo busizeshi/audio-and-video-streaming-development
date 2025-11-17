@@ -21,6 +21,7 @@ public:
 
     /**
      * @brief Init
+     * @param properties
      * @param "sample_rate", 采样率，默认48000
      *        "channels", 通道数，默认2
      *        "bitrate", 比特率, 默认128*1024
@@ -33,9 +34,9 @@ public:
 
     virtual int Encode(AVFrame* frame, uint8_t* out, int out_len);
 
-    virtual AVPacket* Encode(AVFrame* frame, int64_t pts, const int flush = 0);
+    virtual AVPacket* Encode(AVFrame* frame, int64_t pts, int flush = 0);
 
-    virtual RET_CODE EncodeInput(const uint8_t* in, const uint32_t size);
+    virtual RET_CODE EncodeInput(const uint8_t* in, uint32_t size);
 
     virtual RET_CODE EncodeInput(const AVFrame* frame);
 
@@ -83,7 +84,7 @@ public:
         return ctx_->sample_fmt;
     }
 
-    void GetAdtsHeader(uint8_t* adts_header, int aac_length)
+    void GetAdtsHeader(uint8_t* adts_header, int aac_length) const
     {
         uint8_t freqIdx = 0; //0: 96000 Hz  3: 48000 Hz 4: 44100 Hz
         switch (ctx_->sample_rate)
@@ -137,7 +138,7 @@ public:
         adts_header[0] = 0xFF;
         adts_header[1] = 0xF1;
         adts_header[2] = ((ctx_->profile) << 6) + (freqIdx << 2) + (ch_cfg >> 2);
-        adts_header[3] = (((ch_cfg & 3) << 6) + (frame_length >> 11));
+        adts_header[3] = ((ch_cfg & 3) << 6) + (frame_length >> 11);
         adts_header[4] = ((frame_length & 0x7FF) >> 3);
         adts_header[5] = (((frame_length & 7) << 5) + 0x1F);
         adts_header[6] = 0xFC;

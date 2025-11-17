@@ -75,7 +75,7 @@ namespace LQF
         video_height_ = properties.GetProperty("video_height", desktop_height_); // 高
         video_fps_ = properties.GetProperty("video_fps", desktop_fps_); // 帧率
         video_gop_ = properties.GetProperty("video_gop", video_fps_);
-        video_bitrate_ = properties.GetProperty("video_bitrate", 1024 * 1024); // 先默认1M fixedme
+        video_bitrate_ = properties.GetProperty("video_bitrate", 1024 * 1024); // 先默认1M fixed
         video_b_frames_ = properties.GetProperty("video_b_frames", 0); // b帧数量
 
         // rtmp推流
@@ -93,7 +93,6 @@ namespace LQF
             if (!video_out_sdl)
             {
                 LogError("new VideoOutSDL() failed");
-                return RET_FAIL;
             }
             Properties yuv_out_properties;
             yuv_out_properties.SetProperty("video_width", desktop_width_);
@@ -112,7 +111,6 @@ namespace LQF
         if (!rtmp_pusher)
         {
             LogError("new RTMPPusher() failed");
-            return RET_FAIL;
         }
 
         if (!rtmp_pusher->Connect(rtmp_url_))
@@ -129,7 +127,6 @@ namespace LQF
         if (!rtmp_pusher)
         {
             LogError("new AACEncoder() failed");
-            return RET_FAIL;
         }
         Properties aud_codec_properties;
         aud_codec_properties.SetProperty("sample_rate", audio_sample_rate_);
@@ -152,8 +149,8 @@ namespace LQF
         audio_resampler_ = new AudioResampler();
         AudioResampleParams aud_params;
         aud_params.logtag = "[audio-resample]";
-        aud_params.src_sample_fmt = (AVSampleFormat)mic_sample_fmt_;
-        aud_params.dst_sample_fmt = (AVSampleFormat)audio_encoder_->get_sample_format();
+        aud_params.src_sample_fmt = static_cast<AVSampleFormat>(mic_sample_fmt_);
+        aud_params.dst_sample_fmt = static_cast<AVSampleFormat>(audio_encoder_->get_sample_format());
         aud_params.src_sample_rate = mic_sample_rate_;
         aud_params.dst_sample_rate = audio_encoder_->get_sample_rate();
         av_channel_layout_default(&ch_layout, mic_channels_);
@@ -202,7 +199,7 @@ namespace LQF
         rtmp_pusher->Post(RTMP_BODY_METADATA, metadata, false);
 
         // 设置音频pts的间隔
-        double audio_frame_duration = 1000.0 / audio_encoder_->get_sample_rate() * audio_encoder_->GetFrameSampleSize();
+        const double audio_frame_duration = 1000.0 / audio_encoder_->get_sample_rate() * audio_encoder_->GetFrameSampleSize();
         LogInfo("audio_frame_duration:%lf", audio_frame_duration);
         AVPublishTime::GetInstance()->set_audio_frame_duration(audio_frame_duration);
         AVPublishTime::GetInstance()->set_audio_pts_strategy(AVPublishTime::PTS_RECTIFY); //帧间隔矫正
@@ -228,7 +225,7 @@ namespace LQF
         }
 
         // 设置视频pts的间隔
-        double video_frame_duration = 1000.0 / video_encoder_->get_framerate();
+        const double video_frame_duration = 1000.0 / video_encoder_->get_framerate();
         LogInfo("video_frame_duration:%lf", video_frame_duration);
         AVPublishTime::GetInstance()->set_video_pts_strategy(AVPublishTime::PTS_RECTIFY); //帧间隔矫正
         video_capturer = new VideoCapturer();
@@ -244,9 +241,9 @@ namespace LQF
         }
         video_nalu_buf = new uint8_t[VIDEO_NALU_BUF_MAX_SIZE];
 
-        video_capturer->AddCallback(std::bind(&PushWork::YuvCallback, this,
-                                              std::placeholders::_1,
-                                              std::placeholders::_2));
+        video_capturer->AddCallback([this](uint8_t* yuv, const int32_t) {
+            this->YuvCallback(yuv);
+        });
         if (video_capturer->Start() != RET_OK)
         {
             LogError("VideoCapturer Start failed");
@@ -404,10 +401,16 @@ namespace LQF
         }
     }
 
-    void PushWork::YuvCallback(uint8_t* yuv, int32_t size)
+    void PushWork::YuvCallback(uint8_t* yuv)
     {
         if (video_out_sdl)
-            video_out_sdl->Cache(yuv, size);
+        {
+            const RET_CODE ret = video_out_sdl->Cache(yuv);
+            if (ret != RET_OK)
+            {
+                LogWarn("VideoOutSDL::Cache failed with return code: %d", ret);
+            }
+        }
         char start_code[] = {0, 0, 0, 1};
         if (need_send_video_config)
         {

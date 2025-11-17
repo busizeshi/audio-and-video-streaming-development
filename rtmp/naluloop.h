@@ -8,10 +8,10 @@ namespace LQF
     class NaluLoop : public Looper
     {
     public:
-        NaluLoop(int queue_nalu_len);
+        explicit NaluLoop(int queue_nalu_len);
 
     private:
-        virtual void addmsg(LooperMessage* msg, bool flush);
+        void addmsg(LooperMessage* msg, bool flush) override;
 
     private:
         int max_nalu_;

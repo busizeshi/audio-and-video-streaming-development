@@ -15,20 +15,20 @@ namespace LQF
     //定义YUV格式
 #define YUV_FORMAT  SDL_PIXELFORMAT_IYUV
 
-    class VideoOutSDL
+    class VideoOutSDL final
     {
     public:
         VideoOutSDL();
 
-        virtual ~VideoOutSDL();
+        ~VideoOutSDL();
 
-        virtual RET_CODE Init(const Properties& properties);
+        RET_CODE Init(const Properties& properties);
 
-        virtual RET_CODE Cache(uint8_t* video_buf, uint32_t size);
+        RET_CODE Cache(const uint8_t* video_buf) const;
 
-        virtual RET_CODE Output(uint8_t* video_buf, uint32_t size);
+        RET_CODE Output(const uint8_t* video_buf);
 
-        virtual RET_CODE Loop();
+        RET_CODE Loop();
 
     private:
         // SDL

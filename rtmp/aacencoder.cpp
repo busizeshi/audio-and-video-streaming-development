@@ -149,7 +149,7 @@ int AACEncoder::Encode(AVFrame* frame, uint8_t* out, int out_len)
 
     // 将数据从 packet 复制到用户的 'out' 缓冲区
     memcpy(out, pkt.data, pkt.size);
-    int encoded_size = pkt.size;
+    const int encoded_size = pkt.size;
 
     // 释放 packet
     av_packet_unref(&pkt);
@@ -195,7 +195,7 @@ AVPacket* AACEncoder::Encode(AVFrame* frame, int64_t pts, const int flush)
         av_packet_free(&packet); // 必须释放分配的包
         return nullptr;
     }
-    else if (ret < 0)
+    if (ret < 0)
     {
         LogError("avcodec_receive_packet() failed.");
         av_packet_free(&packet); // 必须释放分配的包
@@ -294,7 +294,7 @@ RET_CODE AACEncoder::EncodeOutput(AVPacket* pkt)
 RET_CODE AACEncoder::EncodeOutput(uint8_t* out, uint32_t& size)
 {
     // 新 API：在栈上创建 AVPacket
-    AVPacket pkt = {0};
+    AVPacket pkt = {nullptr};
 
     // 旧 API (已废弃且危险)
     // av_init_packet(&pkt);
@@ -304,7 +304,7 @@ RET_CODE AACEncoder::EncodeOutput(uint8_t* out, uint32_t& size)
     RET_CODE ret = EncodeOutput(&pkt); // 此函数将为 pkt.data 分配内存
     if (ret == RET_OK)
     {
-        if (pkt.size > (int)size)
+        if (pkt.size > static_cast<int>(size))
         {
             LogError("AAC Output buffer too small. Need %d, have %u", pkt.size, size);
             size = 0; // 报告 0 字节写入

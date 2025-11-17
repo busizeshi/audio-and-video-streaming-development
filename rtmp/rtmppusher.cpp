@@ -69,7 +69,7 @@ namespace LQF
         return c + 8;
     }
 
-    void RTMPPusher::handle(int what, void* data)
+    void RTMPPusher::handle(const int what, void* data)
     {
         LogDebug("into");
         //要加是否断开连接逻辑
@@ -95,7 +95,7 @@ namespace LQF
                             AVPublishTime::GetInstance()->getCurrenTime());
                 }
 
-                auto* metadata = (FLVMetadataMsg*)data;
+                auto* metadata = static_cast<FLVMetadataMsg*>(data);
                 if (!SendMetadata(metadata))
                 {
                     LogError("SendMetadata failed");
