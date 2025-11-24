@@ -1,5 +1,4 @@
-// --- 1. 封印 SDL 的 main 劫持（必须在最前面） ---
-#define SDL_MAIN_HANDLED
+#define SDL_MAIN_HANDLED //封印 SDL 的 main 劫持
 
 #include <iostream>
 #include <thread>
@@ -19,7 +18,6 @@ extern "C" {
 #include <libavutil/pixdesc.h>
 }
 
-// --- 全局法宝（共享状态） ---
 std::mutex g_video_mutex;
 std::vector<uint8_t> g_video_buffer; // 存放最新一帧的像素数据
 bool g_frame_ready = false; // 标记是否有新数据
@@ -49,7 +47,7 @@ int main()
     SDL_Window* window = SDL_CreateWindow("Han Li's Stream Preview",
                                           SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                           g_video_width, g_video_height,
-                                          SDL_WINDOW_SHOWN);
+                                          SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     if (!window)
     {
         std::cerr << "[Error] Window creation failed: " << SDL_GetError() << std::endl;

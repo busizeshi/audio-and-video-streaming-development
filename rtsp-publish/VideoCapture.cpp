@@ -6,7 +6,8 @@
 
 #include <utility>
 
-static std::string ff_err2str(int errnum) {
+static std::string ff_err2str(int errnum)
+{
     char buf[256];
     av_strerror(errnum, buf, sizeof(buf));
     return std::string(buf);
@@ -14,7 +15,7 @@ static std::string ff_err2str(int errnum) {
 
 VideoCapture::VideoCapture()
 {
-    avdevice_register_all();
+    // avdevice_register_all();//已被废弃
 }
 
 VideoCapture::~VideoCapture()
@@ -114,8 +115,10 @@ bool VideoCapture::open(const std::string& deviceName, const int width, const in
     }
 
     std::cout << "[INFO]: camera opened: " << width << "x" << height
-              << " | Format: " << (codec_ctx->pix_fmt != AV_PIX_FMT_NONE ? av_get_pix_fmt_name(codec_ctx->pix_fmt) : "unknown")
-              << " | Codec: " << codec->name << std::endl;
+        << " | Format: " << (codec_ctx->pix_fmt != AV_PIX_FMT_NONE
+                                 ? av_get_pix_fmt_name(codec_ctx->pix_fmt)
+                                 : "unknown")
+        << " | Codec: " << codec->name << std::endl;
 
     return true;
 }
@@ -186,7 +189,7 @@ void VideoCapture::captureThreadLoop()
             av_packet_unref(packet);
             continue;
         }
-        else if (ret < 0)
+        if (ret < 0)
         {
             // 遇到不可恢复错误或 EOF：跳出循环
             // 打印错误信息以便调试
