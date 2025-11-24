@@ -6,7 +6,7 @@
 
 #include <utility>
 
-static inline std::string ff_err2str(int errnum) {
+static std::string ff_err2str(int errnum) {
     char buf[256];
     av_strerror(errnum, buf, sizeof(buf));
     return std::string(buf);
@@ -22,7 +22,7 @@ VideoCapture::~VideoCapture()
     stop();
 }
 
-bool VideoCapture::open(const std::string& deviceName, int width, int height, int fps)
+bool VideoCapture::open(const std::string& deviceName, const int width, const int height, const int fps)
 {
     // 查找 dshow（Windows）；如果在其他平台，应改为对应 input format
     const AVInputFormat* inputFormat = av_find_input_format("dshow");
