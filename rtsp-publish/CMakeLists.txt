@@ -1,74 +1,75 @@
-cmake_minimum_required(VERSION 4.0)
-project(rtsp_publish)
+cmake_minimum_required(VERSION 3.10)
 
-set(CMAKE_CXX_STANDARD 11)
+project(rtsp_publish CXX)
 
-set(FFMPEG_DIR "C:/tools/msys64/home/13127/ffmpeg_build")
-set(SDL2_DIR "D:/cxx/audio-and-video-streaming-development/rtsp-publish/SDL2")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 手动指定SDL2的头文件和库文件路径
-set(SDL2_INCLUDE_DIRS "${SDL2_DIR}/include")
-set(SDL2_LIBRARIES "${SDL2_DIR}/lib/x64/SDL2.lib" "${SDL2_DIR}/lib/x64/SDL2main.lib")
+set(FFMPEG_BUILD_DIR "C:/tools/msys64/home/13127/ffmpeg_build")
+set(SDL2_DIR "${PROJECT_SOURCE_DIR}/SDL2")
 
-set(SOURCE_FILES main.cpp
-        VideoCapture.cpp
-        VideoCapture.h
-        AudioCapture.cpp
-        AudioCapture.h)
+# 添加头文件搜索路径
+include_directories(${FFMPEG_BUILD_DIR}/include)
+include_directories(${SDL2_DIR}/include)
 
-add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+# 添加库文件搜索路径
+link_directories(${FFMPEG_BUILD_DIR}/lib)
+link_directories(${SDL2_DIR}/lib/x64)
 
-target_include_directories(
-        ${PROJECT_NAME} PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/librtmp
-        ${FFMPEG_DIR}/include
-        ${SDL2_INCLUDE_DIRS}
+# 添加可执行文件
+set(SOURCES 
+    main.cpp
+    VideoCapture.cpp
+    AudioCapture.cpp
+    SDLDisplay.cpp
 )
 
-target_link_directories(
-        ${PROJECT_NAME} PUBLIC
-        ${FFMPEG_DIR}/lib
-)
+add_executable(${PROJECT_NAME} ${SOURCES})
 
-target_link_libraries(${PROJECT_NAME} PUBLIC
-        avformat
-        avcodec
+# 链接所有必需的库
+target_link_libraries(${PROJECT_NAME}
         avdevice
         avfilter
-        avutil
-        postproc
+        avformat
+        avcodec
         swresample
         swscale
+        postproc
+        avutil
 
-        mp3lame
-        vpx
+        # 编码库
         x264
         fdk-aac
-        iconv
+        mp3lame
+        vpx
         z
+        bz2
+        iconv
         lzma
 
-        # 确保SDL2main在SDL2之前链接
-        ${SDL2_DIR}/lib/x64/SDL2main.lib
-        ${SDL2_DIR}/lib/x64/SDL2.lib
+        # SDL
+        SDL2main
+        SDL2
 
+        # Windows 系统库
         ws2_32
-        wsock32
+        secur32
         bcrypt
-        uuid
-        ole32
         strmiids
-
-        -lbz2
-        -lsecur32
-        -lvfw32
-        -lshlwapi
-        -lavcodec
+        shlwapi
+        ole32
+        oleaut32
+        vfw32
+        advapi32
+        shell32
+        user32
+        gdi32
+        winspool
+        comdlg32
+        uuid
+        kernel32
+        crypt32
+        iphlpapi
+        mswsock
+        wldap32
 )
-
-message(STATUS "项目源文件目录: ${CMAKE_CURRENT_SOURCE_DIR}")
-message(STATUS "FFmpeg 头文件路径: ${FFMPEG_DIR}/include")
-message(STATUS "FFmpeg 库文件路径: ${FFMPEG_DIR}/lib")
-message(STATUS "SDL2 头文件路径: ${SDL2_INCLUDE_DIRS}")
-message(STATUS "SDL2 库文件路径: ${SDL2_DIR}/lib/x64/")
