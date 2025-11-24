@@ -3,8 +3,11 @@ project(rtsp_publish)
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(FFMPEG_DIR "C:/tools/msys64/home/13127/ffmpeg_build")
-set(SDL2_DIR "D:/cxx/audio-and-video-streaming-development/rtsp-publish/SDL2")
+#乐木骆电脑环境
+#set(FFMPEG_DIR "C:/tools/msys64/home/13127/ffmpeg_build")
+set(FFMPEG_DIR "D:/devtools/cxx/msys2/home/jwd/ffmpeg_build")
+
+set(SDL2_DIR "D:/dev/cxx/audio-and-video-streaming-development/rtsp-publish/SDL2")
 
 find_package(SDL2 REQUIRED)
 

@@ -51,6 +51,23 @@ public:
      */
     void stop();
 
+    /**
+     * @brief 获取解码后的像素格式
+     * @note 必须在 open() 成功后调用
+     */
+    AVPixelFormat getFormat() const { return codec_ctx ? codec_ctx->pix_fmt : AV_PIX_FMT_NONE; }
+    /**
+     * @brief 获取解码后的宽度
+     * @note 必须在 open() 成功后调用
+     */
+    int getWidth() const { return codec_ctx ? codec_ctx->width : 0; }
+
+    /**
+     * @brief 获取解码后的高度
+     * @note 必须在 open() 成功后调用
+     */
+    int getHeight() const { return codec_ctx ? codec_ctx->height : 0; }
+
 private:
     /**
      * @brief 采集工作线程（内部运行）

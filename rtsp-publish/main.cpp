@@ -3,6 +3,8 @@
 #include "VideoCapture.h"
 #include <fstream>
 #include <vector>
+#include <windows.h>
+#include <consoleapi2.h>
 
 void saveFrameToPGM(const AVFrame* frame, const int frameCount)
 {
@@ -13,48 +15,53 @@ void saveFrameToPGM(const AVFrame* frame, const int frameCount)
 
     for (int i = 0; i < frame->height; i++)
     {
-        file.write(reinterpret_cast<char*>(frame->data[0] + i * frame->linesize[0]), frame->width);
+        file.write(reinterpret_cast<char*>(frame->data[0] + i * frame->linesize[0]),
+                   frame->width);
     }
 
     file.close();
-    std::cout << ">>> [ÑéÖ¤³É¹¦] ÒÑ±£´æÍ¼Æ¬: " << filename << " (ÇëÓÃ¿´Í¼Èí¼ş´ò¿ª¼ì²é)" << std::endl;
+    std::cout << ">>> [éªŒè¯æˆåŠŸ] å·²ä¿å­˜å›¾ç‰‡: " << filename
+              << " (ç”¨å›¾ç‰‡æŸ¥çœ‹å™¨æ‰“å¼€æ£€æŸ¥)" << std::endl;
 }
 
 int main(int argc, char* argv[])
 {
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+
     setbuf(stdout, nullptr);
 
     VideoCapture cap;
 
-    const std::string devName = "Integrated Camera";
+    const std::string devName = "Integrated Webcam_FHD";
 
-    std::cout << "ÕıÔÚ´ò¿ªÉãÏñÍ·: " << devName << " ..." << std::endl;
+    std::cout << "æ­£åœ¨æ‰“å¼€æ‘„åƒå¤´: " << devName << " ..." << std::endl;
 
     if (!cap.open(devName, 1280, 720, 30))
     {
-        std::cerr << "´ò¿ªÊ§°Ü£¡Çë¼ì²éÉè±¸ÃûÊÇ·ñÕıÈ·£¬»òÊÇ·ñ±»ÆäËû³ÌĞòÕ¼ÓÃ¡£" << std::endl;
+        std::cerr << "æ‰“å¼€å¤±è´¥ï¼Œè¯·æ£€æŸ¥è®¾å¤‡åç§°æ˜¯å¦æ­£ç¡®æˆ–æ˜¯å¦è¢«å ç”¨ã€‚" << std::endl;
         return -1;
     }
 
     int count = 0;
 
     cap.start([&](AVFrame* frame)
-    {
-        count++;
-        if (count % 1 == 0)
-        {
-            std::cout << "²É¼¯µÚ " << count << " Ö¡ | ¸ñÊ½: " << frame->format
-                << " | PTS: " << frame->pts << std::endl;
-        }
+              {
+                  count++;
+                  if (count % 1 == 0)
+                  {
+                      std::cout << "é‡‡é›†åˆ° " << count << " å¸§ | æ ¼å¼: " << frame->format
+                                << " | PTS: " << frame->pts << std::endl;
+                  }
 
-        saveFrameToPGM(frame, count);
+                  saveFrameToPGM(frame, count);
 
-        av_frame_free(&frame);
-    });
+                  av_frame_free(&frame);
+              });
 
     std::this_thread::sleep_for(std::chrono::seconds(3));
 
     cap.stop();
-    std::cout << "³ÌĞò½áÊø¡£" << std::endl;
+    std::cout << "é‡‡é›†ç»“æŸã€‚" << std::endl;
     return 0;
 }
