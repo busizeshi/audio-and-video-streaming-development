@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 
     VideoCapture cap;
 
-    const std::string devName = "Integrated Webcam_FHD";
+    const std::string devName = "Integrated Camera";
 
     std::cout << "正在打开摄像头: " << devName << " ..." << std::endl;
 
