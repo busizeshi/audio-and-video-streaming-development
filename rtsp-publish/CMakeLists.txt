@@ -4,8 +4,8 @@ project(rtsp_publish)
 set(CMAKE_CXX_STANDARD 17)
 
 #乐木骆电脑环境
-set(FFMPEG_DIR "C:/tools/msys64/home/13127/ffmpeg_build")
-#set(FFMPEG_DIR "D:/devtools/cxx/msys2/home/jwd/ffmpeg_build")
+#set(FFMPEG_DIR "C:/tools/msys64/home/13127/ffmpeg_build")
+set(FFMPEG_DIR "D:/devtools/cxx/msys2/home/jwd/ffmpeg_build")
 
 set(SDL2_DIR "D:/dev/cxx/audio-and-video-streaming-development/rtsp-publish/SDL2")
 
@@ -15,7 +15,11 @@ set(SOURCE_FILES main.cpp
         VideoCapture.cpp
         VideoCapture.h
         ConfigManager.cpp
-        ConfigManager.h)
+        ConfigManager.h
+        AudioCapture.cpp
+        ThreadSafeQueue.h
+        SDLViewer.cpp
+        SDLViewer.h)
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 

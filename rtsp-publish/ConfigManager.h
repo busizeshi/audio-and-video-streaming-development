@@ -25,10 +25,10 @@ private:
     std::unordered_map<std::string, std::string> configMap;
     
     // 去除字符串两端空格
-    std::string trim(const std::string& str) const;
+    static std::string trim(const std::string& str) ;
     
     // 判断是否为注释行或空行
-    bool isCommentOrEmpty(const std::string& line) const;
+    static bool isCommentOrEmpty(const std::string& line) ;
 };
 
 #endif //RTSP_PUBLISH_CONFIGMANAGER_H

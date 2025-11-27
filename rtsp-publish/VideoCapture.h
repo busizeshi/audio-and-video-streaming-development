@@ -7,12 +7,16 @@
 #include <functional>
 #include <iostream>
 
+// 添加对 ConfigManager.h 的包含
+#include "ConfigManager.h"
+
 extern "C" {
 #include <libavdevice/avdevice.h>
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/time.h>
 #include <libavutil/imgutils.h>
+#include <libswscale/swscale.h>
 }
 
 /**
@@ -22,29 +26,26 @@ extern "C" {
  *
  * @param frame 已经被引用（ref）的 AVFrame*
  */
-using VideoFrameCallback = std::function<void(AVFrame* frame)>;
+using VideoFrameCallback = std::function<void(AVFrame *frame)>;
 
-class VideoCapture
-{
+class VideoCapture {
 public:
     VideoCapture();
+
     ~VideoCapture();
 
     /**
      * @brief 打开摄像头
-     * @param deviceName 设备名（在 Windows/dshow 是设备显示名）
-     * @param width 宽
-     * @param height 高
-     * @param fps 帧率
+     * @param config 配置管理器对象
      * @return true 成功
      */
-    bool open(const std::string& deviceName, int width, int height, int fps);
+    bool open(const ConfigManager& config);
 
     /**
      * @brief 开始采集（会启动线程）
      * @param cb 回调函数（会在采集线程中调用）
      */
-    void start(const VideoFrameCallback& cb);
+    void start(const VideoFrameCallback &cb);
 
     /**
      * @brief 停止采集（会等待线程退出并释放资源）
@@ -55,7 +56,8 @@ public:
      * @brief 获取解码后的像素格式
      * @note 必须在 open() 成功后调用
      */
-    AVPixelFormat getFormat() const { return codec_ctx ? codec_ctx->pix_fmt : AV_PIX_FMT_NONE; }
+    static AVPixelFormat getFormat() { return AV_PIX_FMT_NV12; }
+
     /**
      * @brief 获取解码后的宽度
      * @note 必须在 open() 成功后调用
@@ -75,9 +77,12 @@ private:
     void captureThreadLoop();
 
 private:
-    AVFormatContext* fmt_ctx = nullptr;
-    AVCodecContext* codec_ctx = nullptr;
+    AVFormatContext *fmt_ctx = nullptr;
+    AVCodecContext *codec_ctx = nullptr;
     int video_stream_index = -1;
+
+    SwsContext *sws_ctx = nullptr;
+    AVFrame *nv12_frame = nullptr;
 
     std::thread worker_thread;
     std::atomic<bool> isRunning{false};

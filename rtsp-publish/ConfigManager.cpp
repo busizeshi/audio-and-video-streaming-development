@@ -4,13 +4,9 @@
 #include <algorithm>
 #include <iostream>
 
-ConfigManager::ConfigManager() {
-    // 构造函数
-}
+ConfigManager::ConfigManager() = default;
 
-ConfigManager::~ConfigManager() {
-    // 析构函数
-}
+ConfigManager::~ConfigManager() = default;
 
 bool ConfigManager::loadConfig(const std::string& configFile) {
     std::ifstream file(configFile);
@@ -77,7 +73,7 @@ bool ConfigManager::getBool(const std::string& key, bool defaultValue) const {
     return defaultValue;
 }
 
-std::string ConfigManager::trim(const std::string& str) const {
+std::string ConfigManager::trim(const std::string& str) {
     size_t first = str.find_first_not_of(' ');
     if (first == std::string::npos) {
         return "";
@@ -86,7 +82,7 @@ std::string ConfigManager::trim(const std::string& str) const {
     return str.substr(first, (last - first + 1));
 }
 
-bool ConfigManager::isCommentOrEmpty(const std::string& line) const {
+bool ConfigManager::isCommentOrEmpty(const std::string& line) {
     std::string trimmedLine = trim(line);
     
     // 空行

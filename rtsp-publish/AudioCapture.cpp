@@ -3,7 +3,7 @@
 static inline std::string ff_err2str(int errnum) {
     char buf[256];
     av_strerror(errnum, buf, sizeof(buf));
-    return std::string(buf);
+    return {buf};
 }
 
 AudioCapture::AudioCapture() {
