@@ -1,11 +1,11 @@
 #include <iostream>
-#include <fstream>
-#include <vector>
-#include <chrono>
 #include <thread>
-#include <windows.h> // SetConsoleOutputCP
-
-// 引入你的模块头文件
+#include <windows.h>
+#include <objbase.h>          // COM 组件
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
 #include "ConfigManager.h"
 #include "VideoCapture.h"
 #include "AudioCapture.h"
@@ -14,22 +14,43 @@
 #include "AudioEncoder.h"
 #include "RtmpPublisher.h"
 
-int main(int argc, char *argv[]) {
-    // 设置控制台编码为 UTF-8，防止日志乱码
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
-    setbuf(stdout, nullptr);
+// 辅助函数：列出 dshow 设备
+// 请务必在控制台输出中找到类似 "Microphone (Realtek High Definition Audio)" 的名称
+void listDshowDevices() {
+    std::cout << "\n================= DShow Device List Start =================" << std::endl;
+    std::cout << "Please copy the exact device name (excluding 'video=' or 'audio=') into config.properties" << std::endl;
+    AVFormatContext *pFormatCtx = avformat_alloc_context();
+    AVDictionary* options = NULL;
+    av_dict_set(&options, "list_devices", "true", 0);
+    const AVInputFormat *iformat = av_find_input_format("dshow");
+    // 这行代码会把设备列表打印到 stderr，请注意观察控制台的红色/非标准输出
+    avformat_open_input(&pFormatCtx, "video=dummy", iformat, &options);
+    av_dict_free(&options);
+    avformat_close_input(&pFormatCtx);
+    std::cout << "================== DShow Device List End ==================\n" << std::endl;
+}
 
-    // 1. 加载配置
+int main(int argc, char *argv[]) {
+    // 0. Windows 平台基础初始化 (对音频采集非常重要)
+    SetConsoleOutputCP(CP_UTF8);
+    HRESULT hr = CoInitialize(nullptr);
+    if (FAILED(hr)) {
+        std::cerr << "[System] Warning: CoInitialize failed." << std::endl;
+    }
+
+    avdevice_register_all();
+    avformat_network_init();
+
+    // 调试：列出设备，帮助你核对配置文件
+    listDshowDevices();
+
     ConfigManager config;
-    // 建议使用相对路径或检查文件是否存在
-    std::string configPath = R"(D:\dev\cxx\audio-and-video-streaming-development\rtsp-publish\config.properties)";
+    std::string configPath = R"(../config.properties)";
     if (!config.loadConfig(configPath)) {
-        std::cerr << "Failed to load config.properties from: " << configPath << std::endl;
+        std::cerr << "[System] Error: Cannot load config.properties" << std::endl;
         return -1;
     }
 
-    // 2. 实例化所有模块
     VideoCapture videoCap;
     AudioCapture audioCap;
     VideoEncoder videoEnc;
@@ -37,146 +58,185 @@ int main(int argc, char *argv[]) {
     SDLViewer viewer;
     RtmpPublisher publisher;
 
-    // 3. 打开视频采集
+    // 1. 启动视频采集
+    std::cout << "[Step 1] Opening Video Capture..." << std::endl;
     if (!videoCap.open(config)) {
-        std::cerr << "Failed to open video capture." << std::endl;
+        std::cerr << "[System] Failed to open video capture." << std::endl;
         return -1;
     }
 
-    // 4. 打开音频采集
-    // 修正: 之前的 config key 是 audio_capture_name
+    // 2. 启动音频采集
     std::string audioDev = config.getString("audio_capture_name");
+    bool audioEnabled = false;
+
+    std::cout << "[Step 2] Configuring Audio..." << std::endl;
     if (audioDev.empty()) {
-        std::cerr << "Config 'audio_capture_name' is empty!" << std::endl;
-        // 如果没有配置音频设备，则仅进行视频推流
-        std::cout << "Warning: No audio device configured. Continuing with video only streaming." << std::endl;
+        std::cerr << "[Warning] 'audio_capture_name' is empty in config. Audio disabled." << std::endl;
     } else {
-        // 假设麦克风用默认参数: 2通道, 44100Hz
-        if (!audioCap.open(audioDev, 2, 44100)) {
-            std::cerr << "Failed to open audio capture: " << audioDev << std::endl;
-            std::cout << "Warning: Audio capture failed. Continuing with video only streaming." << std::endl;
+        std::cout << "[Audio] Attempting to open device: [" << audioDev << "]" << std::endl;
+        // 尝试以双通道 44100Hz 打开，如果设备不支持该参数，open 内部可能会失败
+        if (audioCap.open(audioDev, 2, 44100)) {
+            audioEnabled = true;
+            std::cout << "[Audio] Device opened successfully!" << std::endl;
+            std::cout << "[Audio] Hardware Params: " << audioCap.getSampleRate() << "Hz, "
+                      << audioCap.getChannels() << "ch, Format: " << audioCap.getSampleFormat() << std::endl;
+        } else {
+            std::cerr << "[Error] Failed to open audio device. Check the name strictly." << std::endl;
+            std::cerr << "        Make sure the device is not occupied by another app." << std::endl;
         }
     }
 
-    // 5. 初始化预览窗口
+    // 3. SDL 预览
     if (!viewer.init("Local Preview", videoCap.getWidth(), videoCap.getHeight())) {
-        std::cerr << "Failed to init SDL viewer." << std::endl;
         return -1;
     }
 
-    // 6. 初始化视频编码器 (使用采集到的宽高)
-    // 码率 2Mbps, 30fps
+    // 4. 初始化视频编码器
     if (!videoEnc.init(videoCap.getWidth(), videoCap.getHeight(), 30, 2000000)) {
-        std::cerr << "Failed to init video encoder." << std::endl;
         return -1;
     }
 
-    // 7. 初始化音频编码器
-    // 输入: S16格式, Stereo, 44100Hz (需与 AudioCapture 匹配)
-    // 输出: AAC, Stereo, 44100Hz, 128kbps
-    if (!audioEnc.init(44100, AV_SAMPLE_FMT_S16, AV_CH_LAYOUT_STEREO,
-                       44100, 2, 128000)) {
-        std::cerr << "Failed to init audio encoder." << std::endl;
-        return -1;
-    }
-
-    // 8. 初始化推流器
-    std::string rtmpUrl = config.getString("rtmp_push_url");
-    if (rtmpUrl.empty()) {
-        std::cerr << "Config 'rtmp_push_url' is empty!" << std::endl;
-        return -1;
-    }
-    if (!publisher.init(rtmpUrl)) {
-        std::cerr << "Failed to init publisher." << std::endl;
-        std::cout << "Warning: Failed to connect to RTMP server. Check network connectivity and server status." << std::endl;
-        // 程序将继续运行，但不会推流
-    }
-
-    // 9. 添加流信息 (必须在 encoder init 之后)
-    // 注意：VideoEncoder 的 Timebase 已经在内部设为 1/fps (1/30)
-    publisher.addVideoStream(videoEnc.getCodecParameters(), videoEnc.getTimebase());
-    // 注意：AudioEncoder (AAC) 的 Timebase 通常是 1/sample_rate
-    publisher.addAudioStream(audioEnc.getCodecParameters(), {1, 44100});
-
-    // 10. 打开推流网络连接
-    if (!publisher.start()) {
-        std::cerr << "Failed to start publisher (connect to server)." << std::endl;
-        std::cout << "Warning: Failed to connect to RTMP server. Check network connectivity and server status." << std::endl;
-        // 程序将继续运行，但不会推流
-    }
-
-    // ==========================================
-    // 11. 绑定回调 (核心数据流向)
-    // ==========================================
-
-    // [视频路径]: Capture -> (1.SDL预览) & (2.编码 -> 推流)
-    videoCap.start([&](AVFrame *frame) {
-        // 分支1: 给预览 (clone一份，因为 Viewer 是异步队列，需要拥有独立的 frame 引用)
-        AVFrame *viewFrame = av_frame_clone(frame);
-        if (viewFrame) {
-            viewer.pushFrame(viewFrame);
+    // 5. 初始化音频编码器
+    if (audioEnabled) {
+        // 使用采集设备实际得到的参数来初始化编码器，防止参数不匹配导致的杂音或失败
+        if (!audioEnc.init(audioCap.getSampleRate(), audioCap.getSampleFormat(),
+                           audioCap.getChannelLayout(),
+                           44100, 2, 128000)) {
+            std::cerr << "[Error] Audio Encoder init failed." << std::endl;
+            audioEnabled = false;
         }
+    }
 
-        // 分支2: 给编码
-        // VideoEncoder::encodeFrame 内部做了 sws_scale (深拷贝)，所以直接传 frame 是安全的
-        videoEnc.encodeFrame(frame);
+    // 6. RTMP 推流初始化
+    std::string rtmpUrl = config.getString("rtmp_push_url");
+    if (publisher.init(rtmpUrl)) {
+        publisher.addVideoStream(videoEnc.getCodecParameters(), videoEnc.getTimebase());
+        if (audioEnabled) {
+            publisher.addAudioStream(audioEnc.getCodecParameters(), audioEnc.getTimebase());
+        }
+        publisher.start();
+    } else {
+        std::cerr << "[Warning] RTMP init failed (Network issue?). Proceeding without publishing." << std::endl;
+    }
 
-        // 释放 Capture 传来的原始引用
-        av_frame_unref(frame);
-        av_frame_free(&frame);
+    // --- 视频编码专用线程 ---
+    std::queue<AVFrame*> encQueue;
+    std::mutex encMutex;
+    std::condition_variable encCv;
+    std::atomic<bool> encThreadRunning{true};
+
+    std::thread encThread([&]() {
+        while (encThreadRunning) {
+            AVFrame* frame = nullptr;
+            {
+                std::unique_lock<std::mutex> lock(encMutex);
+                encCv.wait(lock, [&] { return !encQueue.empty() || !encThreadRunning; });
+
+                if (!encThreadRunning && encQueue.empty()) break;
+                if (encQueue.empty()) continue;
+
+                frame = encQueue.front();
+                encQueue.pop();
+            }
+
+            if (frame) {
+                videoEnc.encodeFrame(frame);
+                av_frame_unref(frame);
+                av_frame_free(&frame);
+            }
+        }
     });
 
-    // 视频编码完成回调: Encoder -> Publisher
-    videoEnc.setCallback([&](AVPacket *packet) {
-        publisher.pushVideoPacket(packet);
+    // 7. 绑定回调
+    videoCap.start([&](AVFrame *frame) {
+        // 1. 发送给预览
+        AVFrame *viewFrame = av_frame_clone(frame);
+        if (viewFrame) viewer.pushFrame(viewFrame);
+
+        // 2. 发送给编码队列
+        {
+            std::lock_guard<std::mutex> lock(encMutex);
+            if (encQueue.size() > 30) {
+                // 如果队列积压，说明编码太慢，或者网络阻塞导致回调慢
+                // 打印一次警告，避免刷屏
+                static int log_limit = 0;
+                if (log_limit++ % 100 == 0) {
+                    std::cout << "[System] Video encoding queue overloaded (" << encQueue.size() << "), dropping frame!" << std::endl;
+                }
+
+                av_frame_unref(frame);
+                av_frame_free(&frame);
+            } else {
+                encQueue.push(frame);
+                encCv.notify_one();
+            }
+        }
     });
 
-    // [音频路径]: Capture -> 编码 -> 推流
-    // 只有在音频设备成功打开的情况下才启动音频采集线程
-    if (!audioDev.empty()) {
+    videoEnc.setCallback([&](AVPacket *pkt) {
+        publisher.pushVideoPacket(pkt);
+    });
+
+    if (audioEnabled) {
+        std::cout << "[System] Starting Audio Capture Loop..." << std::endl;
         audioCap.start([&](AVFrame *frame) {
-            // AudioEncoder 内部有 FIFO 缓冲，会拷贝数据，所以直接传 frame 安全
-            audioEnc.encodeFrame(frame);
+            // 调试日志：确认音频数据确实进来了
+            static int a_count = 0;
+            if (++a_count % 100 == 0) { // 每100帧（约2秒）打印一次
+                std::cout << "[Debug] Audio frame captured (pts: " << frame->pts << ")" << std::endl;
+            }
 
-            // 释放 Capture 传来的引用
+            audioEnc.encodeFrame(frame);
             av_frame_unref(frame);
             av_frame_free(&frame);
         });
-
-        // 音频编码完成回调: Encoder -> Publisher
-        audioEnc.setCallback([&](AVPacket *packet) {
-            publisher.pushAudioPacket(packet);
+        audioEnc.setCallback([&](AVPacket *pkt) {
+            publisher.pushAudioPacket(pkt);
         });
     }
 
-    // 12. 启动预览线程
     viewer.start();
 
-    // 13. 主循环
-    std::cout << "[MAIN] Running... Press Ctrl+C to stop." << std::endl;
-    // 处理SDL事件循环，检测窗口关闭事件
+    // 8. 主循环
+    std::cout << "[System] Main loop running. Press closing window to stop." << std::endl;
     SDL_Event event;
     while (true) {
-        // 处理SDL事件，检查是否需要退出
         while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                std::cout << "[MAIN] SDL window closed, shutting down..." << std::endl;
-                goto cleanup; // 跳出循环进行清理
-            }
+            if (event.type == SDL_QUIT) goto cleanup;
         }
-        
-        // 检查RTMP连接状态
-        if (rtmpUrl.empty() == false && publisher.isConnected() == false) {
-            std::cout << "[MAIN] RTMP connection lost." << std::endl;
-            // 可以选择在这里尝试重连或者继续运行
+
+        // 可在此处检查 RTMP 状态
+        if (!publisher.isConnected() && !rtmpUrl.empty()) {
+            // std::cout << "RTMP disconnected..." << std::endl;
         }
-        
-        // 短暂休眠以减少CPU占用
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    
-cleanup:
-    // 程序结束前进行资源清理
-    std::cout << "[MAIN] Cleaning up resources..." << std::endl;
+
+    cleanup:
+    std::cout << "[System] Shutting down..." << std::endl;
+    videoCap.stop();
+    audioCap.stop();
+
+    {
+        std::lock_guard<std::mutex> lock(encMutex);
+        encThreadRunning = false;
+    }
+    encCv.notify_all();
+    if (encThread.joinable()) encThread.join();
+
+    // 清理残留帧
+    while (!encQueue.empty()) {
+        AVFrame* f = encQueue.front();
+        encQueue.pop();
+        av_frame_unref(f);
+        av_frame_free(&f);
+    }
+
+    videoEnc.stop();
+    audioEnc.stop();
+    publisher.stop();
+    viewer.stop();
+
+    CoUninitialize(); // 反初始化 COM
     return 0;
 }
