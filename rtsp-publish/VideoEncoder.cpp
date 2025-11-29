@@ -20,7 +20,7 @@ bool VideoEncoder::init(int width, int height, int fps, int bit_rate) {
     frame_height_ = height;
     next_pts_ = 0;
 
-    const AVCodec* codec = avcodec_find_encoder_by_name("libx264");
+    const AVCodec *codec = avcodec_find_encoder_by_name("libx264");
     if (!codec) {
         std::cerr << "[Encoder] Error: Codec libx264 not found." << std::endl;
         return false;
@@ -36,24 +36,27 @@ bool VideoEncoder::init(int width, int height, int fps, int bit_rate) {
     codec_ctx_->width = width;
     codec_ctx_->height = height;
     codec_ctx_->bit_rate = bit_rate;
-    // time_base (时间基): 1/fps。PTS 将以此为单位递增。
     codec_ctx_->time_base = {1, fps};
     codec_ctx_->framerate = {fps, 1};
-    // gop_size: 关键帧间隔。设置短一点（如 2*fps）对直播延迟有好处。
-    codec_ctx_->gop_size = fps;
-    codec_ctx_->max_b_frames = 0; // B 帧会增加延迟，直播流设为 0
-    // pix_fmt: libx264 偏好 YUV420P
+    codec_ctx_->gop_size = fps * 2; // 建议 GOP 设置为 2秒，fps * 2
+    codec_ctx_->max_b_frames = 0;
     codec_ctx_->pix_fmt = AV_PIX_FMT_YUV420P;
 
+    // --- 关键修正 1: 必须设置全局头标志 ---
+    // 这会让 libx264 生成 AVCC 格式的 extradata (SPS/PPS)，而不是 Annex-B
+    codec_ctx_->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+    // 简单粗暴写法（推荐）：因为你确定是推 RTMP/FLV
+    codec_ctx_->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
     // --- 设置 x264 特有参数 ---
-    // "preset": veryfast, superfast, ultrafast... (速度越快，压缩率越低)
     av_opt_set(codec_ctx_->priv_data, "preset", "ultrafast", 0);
-    // "tune": zerolatency (零延迟，对直播非常重要)
     av_opt_set(codec_ctx_->priv_data, "tune", "zerolatency", 0);
-    // 添加profile约束以确保兼容性
     av_opt_set(codec_ctx_->priv_data, "profile", "baseline", 0);
-    // 强制每个关键帧都包含SPS/PPS
-    av_opt_set(codec_ctx_->priv_data, "repeat-headers", "1", 0);
+
+    // --- 关键修正 2: 移除 repeat-headers ---
+    // 既然使用了 Global Header，就不需要在每个关键帧重复 SPS/PPS 了 (FLV 标准做法)
+    // av_opt_set(codec_ctx_->priv_data, "repeat-headers", "1", 0); // <--- 删除或注释掉这一行
 
     int ret = avcodec_open2(codec_ctx_, codec, nullptr);
     if (ret < 0) {
@@ -111,7 +114,7 @@ bool VideoEncoder::init(int width, int height, int fps, int bit_rate) {
     return true;
 }
 
-bool VideoEncoder::encodeFrame(AVFrame* nv12_frame) {
+bool VideoEncoder::encodeFrame(AVFrame *nv12_frame) {
     if (!codec_ctx_ || !sws_ctx_ || !yuv420p_frame_) {
         return false;
     }
@@ -119,7 +122,7 @@ bool VideoEncoder::encodeFrame(AVFrame* nv12_frame) {
     // 1. 格式转换: NV12 -> YUV420P
     int ret = sws_scale(
             sws_ctx_,
-            (const uint8_t* const*)nv12_frame->data, nv12_frame->linesize,
+            (const uint8_t *const *) nv12_frame->data, nv12_frame->linesize,
             0, frame_height_,
             yuv420p_frame_->data, yuv420p_frame_->linesize
     );
@@ -148,7 +151,7 @@ bool VideoEncoder::encodeFrame(AVFrame* nv12_frame) {
 
     // 4. 循环接收编码后的 AVPacket
     while (ret >= 0) {
-        AVPacket* packet = av_packet_alloc();
+        AVPacket *packet = av_packet_alloc();
         if (!packet) {
             std::cerr << "[Encoder] Error: av_packet_alloc failed." << std::endl;
             return false;
@@ -192,7 +195,7 @@ void VideoEncoder::flush() {
 
     // 循环接收所有剩余的 packet
     while (ret >= 0) {
-        AVPacket* packet = av_packet_alloc();
+        AVPacket *packet = av_packet_alloc();
         if (!packet) break;
 
         ret = avcodec_receive_packet(codec_ctx_, packet);

@@ -37,6 +37,7 @@ bool AudioEncoder::init(int in_sample_rate, AVSampleFormat in_sample_fmt, int64_
     codec_ctx_->bit_rate = out_bit_rate;
     codec_ctx_->time_base = {1, out_sample_rate};
 
+    codec_ctx_->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
     // 打开编码器
     int ret = avcodec_open2(codec_ctx_, codec, nullptr);
     if (ret < 0) {
@@ -261,7 +262,7 @@ void AudioEncoder::flush() {
 
             // 清理 buffer 的剩余部分 (防止上次的残留数据)
             int data_size = av_get_bytes_per_sample(codec_ctx_->sample_fmt);
-            for(int i=0; i < codec_ctx_->channels; ++i) {
+            for(int i=0; i < codec_ctx_->ch_layout.nb_channels; ++i) {
                 memset(resampled_frame_->data[i] + remaining * data_size, 0, (codec_ctx_->frame_size - remaining) * data_size);
             }
             resampled_frame_->nb_samples = codec_ctx_->frame_size; // 依然发送 1024
