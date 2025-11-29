@@ -19,12 +19,24 @@ set(SOURCE_FILES main.cpp
         AudioCapture.cpp
         ThreadSafeQueue.h
         SDLViewer.cpp
-        SDLViewer.h)
+        SDLViewer.h
+        VideoEncoder.cpp
+        VideoEncoder.h
+        AudioEncoder.cpp
+        AudioEncoder.h
+        RtmpPublisher.cpp
+        RtmpPublisher.h)
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
 # 添加测试可执行文件
-add_executable(test_config ConfigManager.cpp ConfigManager.h)
+#add_executable(test_config ConfigManager.cpp ConfigManager.h
+#        VideoEncoder.cpp
+#        VideoEncoder.h
+#        AudioEncoder.cpp
+#        AudioEncoder.h
+#        RtmpPublisher.cpp
+#        RtmpPublisher.h)
 
 target_include_directories(
         ${PROJECT_NAME} PUBLIC
@@ -35,7 +47,8 @@ target_include_directories(
 )
 
 target_include_directories(
-        test_config PUBLIC
+        #test_config PUBLIC
+        ${PROJECT_NAME} PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/librtmp
         ${FFMPEG_DIR}/include
@@ -81,10 +94,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         -lavcodec
 )
 
-target_link_libraries(test_config PUBLIC
-        ${SDL2_LIBRARIES}
-        ws2_32
-        wsock32)
+#target_link_libraries(test_config PUBLIC
+#        ${SDL2_LIBRARIES}
+#        ws2_32
+#        wsock32)
 
 message(STATUS "项目源文件目录: ${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "FFmpeg 头文件路径: ${FFMPEG_DIR}/include")
