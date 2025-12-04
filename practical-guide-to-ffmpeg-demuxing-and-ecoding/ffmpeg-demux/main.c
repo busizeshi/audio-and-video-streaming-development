@@ -6,6 +6,8 @@
 #include <libavformat/avformat.h>
 
 int main(int argc, char **argv) {
+    setbuf(stdout, NULL);
+
     char *in_filename = NULL;
     if (argv[1] == NULL) {
         printf("Usage: %s <input_file>\n", argv[0]);
@@ -90,7 +92,7 @@ int main(int argc, char **argv) {
             printf("video stream codec_id:%d\n", in_stream->codecpar->codec_id);
             printf("video stream width:%d\n", in_stream->codecpar->width);
             printf("video stream height:%d\n", in_stream->codecpar->height);
-            printf("video stream fps:%d\n", (int) (av_q2d(in_stream->avg_frame_rate) * 1000));
+            printf("video stream fps:%d\n", (int) (av_q2d(in_stream->avg_frame_rate)));
             if (AV_CODEC_ID_MPEG4 == in_stream->codecpar->codec_id) {
                 printf("video codec:MPEG4\n");
             } else if (AV_CODEC_ID_H264 == in_stream->codecpar->codec_id) {
