@@ -4,7 +4,7 @@ project(extract_aac CXX)
 set(CMAKE_C_STANDARD 11)
 
 # 设置FFmpeg路径
-set(FFMPEG_ROOT "C:/tools/msys64/home/13127/ffmpeg_build")
+set(FFMPEG_ROOT "D:/devtools/cxx/msys2/home/jwd/ffmpeg_build")
 
 # 添加头文件目录
 include_directories(${FFMPEG_ROOT}/include)
