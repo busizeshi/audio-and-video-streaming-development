@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <utility>
 #include <vector>
 #include <iomanip>
 #include <cstdint>
@@ -45,7 +46,7 @@ std::string formatTime(uint32_t ms) {
     uint32_t sec = ms / 1000;
     uint32_t msec = ms % 1000;
     snprintf(buf, sizeof(buf), "%u.%03us", sec, msec);
-    return std::string(buf);
+    return {buf};
 }
 
 // ==========================================
@@ -54,7 +55,7 @@ std::string formatTime(uint32_t ms) {
 
 class FLVParser {
 public:
-    FLVParser(const std::string& filename) : filename_(filename) {}
+    FLVParser(std::string  filename) : filename_(std::move(filename)) {}
 
     bool run() {
         std::ifstream file(filename_, std::ios::binary);
@@ -77,7 +78,7 @@ private:
     std::string filename_;
 
     // 解析 FLV Header (9字节)
-    bool parseHeader(std::ifstream& file) {
+    static bool parseHeader(std::ifstream& file) {
         uint8_t buffer[9];
         if (!file.read((char*)buffer, 9)) return false;
 
@@ -106,7 +107,7 @@ private:
     }
 
     // 循环解析 Tag
-    void parseBody(std::ifstream& file) {
+    static void parseBody(std::ifstream& file) {
         uint8_t prevTagSizeBuf[4];
         uint8_t tagHeaderBuf[11];
         int tagIndex = 0;
@@ -158,7 +159,7 @@ private:
     }
 
     // 解析视频 Tag Data [cite: 226]
-    void parseVideoTag(const std::vector<uint8_t>& data, uint32_t dts) {
+    static void parseVideoTag(const std::vector<uint8_t>& data, uint32_t dts) {
         if (data.empty()) return;
 
         // 第1个字节：FrameType (高4位) + CodecID (低4位) [cite: 232]
@@ -205,7 +206,7 @@ private:
     }
 
     // 解析音频 Tag Data [cite: 197]
-    void parseAudioTag(const std::vector<uint8_t>& data) {
+    static void parseAudioTag(const std::vector<uint8_t>& data) {
         if (data.empty()) return;
 
         // 第1个字节：SoundFormat(4bit) Rate(2bit) Size(1bit) Type(1bit) [cite: 204]
