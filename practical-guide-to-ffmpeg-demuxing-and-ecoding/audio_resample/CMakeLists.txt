@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 4.0)
-project(audio_resample C)
+project(audio_resample CXX)
 
 # 设置FFmpeg路径
 set(FFMPEG_ROOT "D:/devtools/cxx/msys2/home/jwd/ffmpeg_build")
@@ -13,7 +13,7 @@ link_directories(${FFMPEG_ROOT}/lib)
 
 # 创建可执行文件
 add_executable(${PROJECT_NAME}
-        main.c
+        main.cpp
 )
 
 # 链接FFmpeg库及依赖
