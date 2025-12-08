@@ -43,6 +43,13 @@ public:
               const int input_rate, const int input_channels, const AVSampleFormat input_fmt)
     {
         // 1. 初始化封装上下文 (Format Context) - 负责写入文件和 ADTS 头
+        /**
+         * 创建一个可用于编码输出的封装上下文，并自动匹配合适的输出格式
+         * oformat: 封装器上下文
+         * format_name: 封装器名称
+         * filename: 文件名
+         * 会根据filename自动识别格式
+         */
         int ret = avformat_alloc_output_context2(&fmt_ctx, nullptr, nullptr, output_file);
         if (!fmt_ctx)
         {
@@ -51,7 +58,7 @@ public:
         }
 
         // 2. 查找编码器
-        const AVCodec* codec = nullptr;
+        const AVCodec* codec = nullptr; // 编解码器
         if (codec_name)
         {
             codec = avcodec_find_encoder_by_name(codec_name);
@@ -68,6 +75,10 @@ public:
         }
 
         // 3. 分配并配置编码器上下文
+        /**
+         * 为编解码器分配并配置编码器上下文，可以关联编码器
+         * 得到编解码器上下文
+         */
         codec_ctx = avcodec_alloc_context3(codec);
         if (!codec_ctx) exit(1);
 
@@ -80,10 +91,13 @@ public:
         // FFmpeg 6.1: 设置通道布局
         av_channel_layout_default(&codec_ctx->ch_layout, input_channels);
 
-        // 打开编码器
+        // 打开编码器:将 AVCodecContext 与指定的 AVCodec 关联
         check_ret(avcodec_open2(codec_ctx, codec, nullptr), "avcodec_open2");
 
         // 4. 添加流到封装器
+        /**
+         * 为输出文件添加流
+         */
         stream = avformat_new_stream(fmt_ctx, nullptr);
         stream->id = fmt_ctx->nb_streams - 1;
         avcodec_parameters_from_context(stream->codecpar, codec_ctx);
@@ -166,7 +180,7 @@ private:
     AVCodecContext* codec_ctx = nullptr; // 编码器上下文
     AVStream* stream = nullptr; // 流
     SwrContext* swr_ctx = nullptr; // 重采样器
-    AVFrame* frame = nullptr; // Frame
+    AVFrame* frame = nullptr; // 是 FFmpeg 中存储原始音视频数据的核心结构体。
     AVPacket* pkt = nullptr; // Packet
 
     void encode_frame(const uint8_t* data, int nb_samples, int64_t pts)
@@ -183,8 +197,8 @@ private:
             // 将 PCM 数据转入 Frame
             // 注意：swr_convert 第三个参数是输出的样本数上限，第四个是输入数据，第五个是输入样本数
             const int dst_nb_samples = swr_convert(swr_ctx,
-                                             frame->data, frame->nb_samples,
-                                             (const uint8_t**)in_data, nb_samples);
+                                                   frame->data, frame->nb_samples,
+                                                   (const uint8_t**)in_data, nb_samples);
             if (dst_nb_samples < 0)
             {
                 std::cerr << "Error during resampling" << std::endl;
@@ -254,7 +268,7 @@ int main(int argc, char** argv)
     // 默认输入参数 (根据你的需求修改)
     const int sample_rate = 48000;
     const int channels = 2;
-    AVSampleFormat input_fmt = AV_SAMPLE_FMT_S16; // 默认 S16LE
+    AVSampleFormat input_fmt = AV_SAMPLE_FMT_S16; // 交错格式（适合播放）;位深16;
 
     // 简单的命令行参数解析来切换输入格式
     if (argc > 4)
