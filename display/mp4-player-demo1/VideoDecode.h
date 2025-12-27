@@ -1,7 +1,3 @@
-//
-// Created by jwd on 2025/12/28.
-//
-
 #ifndef MP4_PLAYER_DEMO2_VIDEODECODE_H
 #define MP4_PLAYER_DEMO2_VIDEODECODE_H
 
@@ -17,7 +13,6 @@ extern "C" {
 class VideoDecode {
 public:
     VideoDecode();
-
     ~VideoDecode();
 
     /**
@@ -28,57 +23,56 @@ public:
     bool init(const std::string &filename);
 
     /**
-     * 读取下一帧
-     * @return
+     * 读取并解码下一帧
+     * @return true 如果成功获取一帧 RGB 数据
      */
     bool readNextFrame();
 
     /**
      * 获取当前解码并转换好的rgb数据指针
-     * @return
      */
-    uint8_t *getRGBData() ;
+    uint8_t *getRGBData();
 
     /**
      * 获取每行数据的字节数 (Pitch)
-     * @return
      */
-    int getLineSize() ;
+    int getLineSize();
 
     /**
      * 获取视频宽度
-     * @return
      */
-    int getWidth() ;
+    int getWidth();
 
     /**
      * 获取视频高度
-     * @return
      */
-    int getHeight() ;
+    int getHeight();
 
     /**
-    * 关闭
+     * 获取视频帧率
+     */
+    double getFPS();
+
+    /**
+    * 关闭并释放资源
     */
     void close();
 
 private:
     // FFmpeg 核心组件
-    AVFormatContext *format_ctx = nullptr;    // 格式上下文
-    AVCodecContext *video_ctx = nullptr;  // 视频解码器上下文
-    AVFrame *frame = nullptr;    // 原始解码帧 (YUV)
-    AVFrame *rgb_frame = nullptr;// 转换为rgb的帧
+    AVFormatContext *format_ctx = nullptr;
+    AVCodecContext *video_ctx = nullptr;
+    AVFrame *frame = nullptr;       // 原始解码帧 (YUV)
+    AVFrame *rgb_frame = nullptr;   // 转换为RGB的帧
     SwsContext *sws_ctx = nullptr;  // 图像格式转换上下文
 
-    int video_stream_index=-1;  // 视频流索引
-    uint8_t* buffer= nullptr;   // rgb数据缓存区
+    int video_stream_index = -1;    // 视频流索引
+    uint8_t* buffer = nullptr;      // RGB数据缓存区
 
     /**
      * 初始化sws上下文
-     * @return
      */
     bool initSwsContext();
 };
-
 
 #endif //MP4_PLAYER_DEMO2_VIDEODECODE_H
