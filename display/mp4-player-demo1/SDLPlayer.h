@@ -1,7 +1,7 @@
 #ifndef MP4_PLAYER_DEMO2_SDLPLAYER_H
 #define MP4_PLAYER_DEMO2_SDLPLAYER_H
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 #include <iostream>
 
 class SDLPlayer {

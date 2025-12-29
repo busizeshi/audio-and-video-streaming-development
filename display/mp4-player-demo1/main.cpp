@@ -50,10 +50,10 @@ int main(int argc, char *argv[]) {
     // 主循环
     while (is_playing) {
         // 记录开始解码渲染的时间
-        uint32_t start_time = SDL_GetTicks();
+        uint32_t start_time = SDL_GetTicks();//表示SDL自初始化以来的时间，毫秒值
 
         // 1. 处理UI事件 (退出等)
-        if (player.handleEvents()) {
+        if (SDLPlayer::handleEvents()) {
             is_playing = false;
             break;
         }

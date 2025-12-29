@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(mp4-player-demo1 CXX)
+project(mp4-player-demo2 CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -18,8 +18,8 @@ add_executable(${PROJECT_NAME}
         main.cpp
         SDLPlayer.cpp
         SDLPlayer.h
-        VideoDecode.cpp
-        VideoDecode.h
+        AudioDecoder.cpp
+        AudioDecoder.h
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-mconsole")

@@ -69,11 +69,16 @@ void uninit_opts(void)
     av_dict_free(&codec_opts);
 }
 
+
 void log_callback_help(void *ptr, int level, const char *fmt, va_list vl)
 {
     vfprintf(stdout, fmt, vl);
 }
 
+/**
+ * 安全初始化DLL搜索路径
+ * @note: 在程序初始化阶段调用 init_dynload，确保 当前目录不会被用作 DLL 搜索路径，提高安全性
+ */
 void init_dynload(void)
 {
 #if HAVE_SETDLLDIRECTORY && defined(_WIN32)
@@ -987,6 +992,17 @@ int filter_codec_opts(const AVDictionary *opts, enum AVCodecID codec_id,
     return 0;
 }
 
+/**
+ * @brief 为格式上下文中的每个流设置查找流信息的编解码器选项
+ *
+ * 该函数为AVFormatContext中的每个流分配并初始化编解码器选项字典，
+ * 从提供的全局编解码器选项中过滤出适用于每个特定流的选项。
+ *
+ * @param s 格式上下文指针，包含流信息
+ * @param codec_opts 全局编解码器选项字典，将被过滤应用到各个流
+ * @param dst 输出参数，指向AVDictionary指针数组的指针，用于存储每个流的编解码器选项
+ * @return int 成功返回0，失败返回负的错误码
+ */
 int setup_find_stream_info_opts(AVFormatContext *s,
                                 AVDictionary *codec_opts,
                                 AVDictionary ***dst)
@@ -999,10 +1015,12 @@ int setup_find_stream_info_opts(AVFormatContext *s,
     if (!s->nb_streams)
         return 0;
 
+    // 分配流数量对应的选项字典数组
     opts = av_calloc(s->nb_streams, sizeof(*opts));
     if (!opts)
         return AVERROR(ENOMEM);
 
+    // 为每个流过滤并设置编解码器选项
     for (int i = 0; i < s->nb_streams; i++) {
         ret = filter_codec_opts(codec_opts, s->streams[i]->codecpar->codec_id,
                                 s, s->streams[i], NULL, &opts[i]);
@@ -1011,12 +1029,14 @@ int setup_find_stream_info_opts(AVFormatContext *s,
     }
     *dst = opts;
     return 0;
-fail:
+    fail:
+    // 清理已分配的选项字典并释放数组
     for (int i = 0; i < s->nb_streams; i++)
         av_dict_free(&opts[i]);
     av_freep(&opts);
     return ret;
 }
+
 
 int grow_array(void **array, int elem_size, int *size, int new_size)
 {

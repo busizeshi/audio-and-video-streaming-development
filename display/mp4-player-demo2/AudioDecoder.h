@@ -1,0 +1,14 @@
+//
+// Created by 13127 on 2025/12/29.
+//
+
+#ifndef MP4_PLAYER_DEMO2_AUDIODECODER_H
+#define MP4_PLAYER_DEMO2_AUDIODECODER_H
+
+
+class AudioDecoder {
+
+};
+
+
+#endif //MP4_PLAYER_DEMO2_AUDIODECODER_H
